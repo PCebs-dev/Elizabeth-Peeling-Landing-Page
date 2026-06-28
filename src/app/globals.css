@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Main theme — warm camel/greige (Joyce Kahng inspired) */
+:root {
+  --brand-50: 250 247 245;
+  --brand-100: 243 237 230;
+  --brand-200: 231 221 208;
+  --brand-300: 214 196 170;
+  --brand-400: 206 170 117;
+  --brand-500: 184 148 96;
+  --brand-600: 156 124 79;
+  --brand-700: 122 98 66;
+  --brand-800: 89 84 72;
+  --brand-900: 64 58 50;
+  --brand-950: 42 38 32;
+
+  --background: #faf7f5;
+  --foreground: #2a2620;
+}
+
+/* Alternate theme — clinical/spa teal */
+.theme-teal {
+  --brand-50: 240 249 248;
+  --brand-100: 217 240 238;
+  --brand-200: 182 225 221;
+  --brand-300: 134 203 197;
+  --brand-400: 86 174 167;
+  --brand-500: 61 145 139;
+  --brand-600: 47 117 112;
+  --brand-700: 41 94 91;
+  --brand-800: 37 76 74;
+  --brand-900: 34 64 63;
+  --brand-950: 15 36 35;
+
+  --background: #f8fcfb;
+  --foreground: #0f2423;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+details summary::-webkit-details-marker {
+  display: none;
+}
