@@ -9,19 +9,19 @@ interface PressBannerProps {
 }
 
 export function PressBanner({ content }: PressBannerProps) {
-  const { pressLink } = content.reviews;
+  const { press } = content;
 
   return (
     <a
-      href={pressLink.href}
+      href={press.href}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => trackOutboundLink(pressLink.href, "press_journal_link")}
+      onClick={() => trackOutboundLink(press.href, "press_journal_link")}
       className="group flex items-center gap-4 rounded-2xl border border-brand-200 bg-white p-4 shadow-card transition hover:border-brand-400 hover:shadow-float"
     >
       <JournalLogo className="shrink-0" />
       <span className="flex-1 text-left text-sm font-medium text-brand-800">
-        {pressLink.label}
+        {press.label}
       </span>
       <span
         className="shrink-0 text-brand-500 transition group-hover:translate-x-0.5"

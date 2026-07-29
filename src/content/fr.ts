@@ -1,5 +1,4 @@
 import { links } from "@/config/links";
-import { verifiedGoogleReviewsFr } from "@/data/verified-reviews";
 import type { SiteContent } from "./types";
 
 export const fr: SiteContent = {
@@ -97,20 +96,9 @@ export const fr: SiteContent = {
       },
     ],
   },
-  reviews: {
-    label: "Témoignages",
-    heading: "Ce que disent les patients.",
-    pressLink: {
-      label: "Lisez l'article sur la Dre Peeling dans Le Journal de Montréal",
-      href: links.journalDeMontreal,
-    },
-    initialCount: 4,
-    showMore: "Voir plus d'avis",
-    showLess: "Voir moins d'avis",
-    viewAllLabel: "Voir tous les avis Google pour LE 32",
-    items: verifiedGoogleReviewsFr,
-    disclaimer:
-      "Les avis affichés sont des avis Google vérifiés pour la clinique LE 32, où exerce la Dre Peeling. Seuls les avis de 4,5 étoiles et plus sont inclus (4 ou 5 étoiles sur Google). Les citations originales en anglais sont traduites en français; certains avis plus anciens n'affichent pas de nom public.",
+  press: {
+    label: "Lisez l'article sur la Dre Peeling dans Le Journal de Montréal",
+    href: links.journalDeMontreal,
   },
   faq: {
     heading: "Foire aux questions",

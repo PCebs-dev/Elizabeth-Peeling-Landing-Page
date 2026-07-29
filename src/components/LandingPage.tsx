@@ -5,7 +5,6 @@ import { LinkCard } from "./LinkCard";
 import { TrustStrip } from "./ServicesSection";
 import { ServicesSection } from "./ServicesSection";
 import { PressBanner } from "./PressBanner";
-import { Reviews } from "./Reviews";
 import { FaqSection } from "./FaqSection";
 import { ChatWidget } from "./ChatWidget";
 import { StickyCta } from "./StickyCta";
@@ -52,7 +51,6 @@ export function LandingPage({
           <div className="mt-12 space-y-12">
             <ServicesSection content={content} />
             <PressBanner content={content} />
-            <Reviews content={content} />
             <FaqSection content={content} />
           </div>
 

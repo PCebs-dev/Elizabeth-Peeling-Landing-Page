@@ -1,5 +1,4 @@
 import { links } from "@/config/links";
-import { verifiedGoogleReviews } from "@/data/verified-reviews";
 import type { SiteContent } from "./types";
 
 export const en: SiteContent = {
@@ -96,20 +95,9 @@ export const en: SiteContent = {
       },
     ],
   },
-  reviews: {
-    label: "Testimonials",
-    heading: "What patients say.",
-    pressLink: {
-      label: "Read Dr. Peeling's feature article in Le Journal de Montréal",
-      href: links.journalDeMontreal,
-    },
-    initialCount: 4,
-    showMore: "Show more reviews",
-    showLess: "Show fewer reviews",
-    viewAllLabel: "Read all Google reviews for LE 32",
-    items: verifiedGoogleReviews,
-    disclaimer:
-      "Reviews shown are verified Google reviews for LE 32 Clinique Dentaire, where Dr. Peeling practices. Only reviews rated 4.5 stars or higher are included (4 or 5 stars on Google). Quotes are verbatim; some older reviews appear without public reviewer names.",
+  press: {
+    label: "Read Dr. Peeling's feature article in Le Journal de Montréal",
+    href: links.journalDeMontreal,
   },
   faq: {
     heading: "Frequently Asked Questions",

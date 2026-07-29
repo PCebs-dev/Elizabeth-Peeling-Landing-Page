@@ -10,13 +10,6 @@ export interface CtaLink {
   trackEvent?: string;
 }
 
-export interface Testimonial {
-  quote: string;
-  name: string;
-  rating?: number;
-  source?: string;
-}
-
 export interface FaqItem {
   question: string;
   answer: string;
@@ -58,19 +51,9 @@ export interface SiteContent {
     heading: string;
     items: ServiceItem[];
   };
-  reviews: {
+  press: {
     label: string;
-    heading: string;
-    pressLink: {
-      label: string;
-      href: string;
-    };
-    initialCount: number;
-    showMore: string;
-    showLess: string;
-    disclaimer: string;
-    viewAllLabel: string;
-    items: Testimonial[];
+    href: string;
   };
   faq: {
     heading: string;
