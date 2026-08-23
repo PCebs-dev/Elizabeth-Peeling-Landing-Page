@@ -12,18 +12,37 @@ import { HistoryPanel } from "./HistoryPanel";
 export function StudioApp() {
   const router = useRouter();
   const [items, setItems] = useState<MediaItem[]>([]);
-  const [activeCreative, setActiveCreative] = useState<string | null>(null);
+  const [activeCreativeId, setActiveCreativeId] = useState<string | null>(null);
+  const [activeCreativeOverride, setActiveCreativeOverride] = useState<string | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
 
   const refreshMedia = useCallback(async () => {
     const next = await listMedia();
     setItems(next);
-    if (!activeCreative && next[0]) setActiveCreative(next[0].dataUrl);
-  }, [activeCreative]);
+    setActiveCreativeId((current) => {
+      if (current && !next.some((item) => item.id === current)) return null;
+      return current;
+    });
+  }, []);
 
   useEffect(() => {
     void refreshMedia();
   }, [refreshMedia]);
+
+  const activeCreative =
+    activeCreativeOverride ??
+    items.find((item) => item.id === activeCreativeId)?.dataUrl ??
+    null;
+
+  function selectCreative(id: string | null) {
+    setActiveCreativeId(id);
+    setActiveCreativeOverride(null);
+  }
+
+  function clearCreative() {
+    setActiveCreativeId(null);
+    setActiveCreativeOverride(null);
+  }
 
   async function signOut() {
     await fetch("/api/studio/auth", { method: "DELETE" });
@@ -58,32 +77,36 @@ export function StudioApp() {
             alt="Selected creative"
             className="max-h-80 w-full object-cover"
           />
-          <p className="px-3 py-2 text-xs text-[rgb(var(--brand-600))]">
-            Active creative for publishing — tap a library photo to change.
-          </p>
+          <div className="flex items-center justify-between gap-2 px-3 py-2">
+            <p className="text-xs text-[rgb(var(--brand-600))]">Active creative for publishing</p>
+            <button
+              type="button"
+              onClick={clearCreative}
+              className="text-xs font-medium text-[rgb(var(--brand-700))] underline"
+            >
+              Clear
+            </button>
+          </div>
         </div>
-      ) : null}
+      ) : (
+        <p className="mb-6 rounded-xl border border-dashed border-[rgb(var(--brand-200))] bg-white px-4 py-3 text-sm text-[rgb(var(--brand-600))]">
+          Select a photo from your library when you are ready to publish.
+        </p>
+      )}
 
       <div className="space-y-6">
         <MediaLibrary
           items={items}
           onChange={() => void refreshMedia()}
           selectionMode
-          selectedIds={
-            activeCreative
-              ? items.filter((i) => i.dataUrl === activeCreative).map((i) => i.id)
-              : []
-          }
-          onToggleSelect={(id) => {
-            const item = items.find((i) => i.id === id);
-            if (item) setActiveCreative(item.dataUrl);
-          }}
+          selectedId={activeCreativeId}
+          onSelect={selectCreative}
         />
 
         <BeforeAfterPanel
           items={items}
           onChange={() => void refreshMedia()}
-          onMerged={(item) => setActiveCreative(item.dataUrl)}
+          onMerged={(item) => selectCreative(item.id)}
         />
 
         <PublishPanel
@@ -93,7 +116,14 @@ export function StudioApp() {
 
         <HistoryPanel
           refreshKey={historyKey}
-          onSelect={(item) => setActiveCreative(item.imageDataUrl)}
+          onSelect={(item) => {
+            const match = items.find((i) => i.dataUrl === item.imageDataUrl);
+            if (match) selectCreative(match.id);
+            else {
+              setActiveCreativeId(null);
+              setActiveCreativeOverride(item.imageDataUrl);
+            }
+          }}
         />
       </div>
     </div>

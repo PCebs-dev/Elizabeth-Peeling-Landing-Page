@@ -13,16 +13,16 @@ import { enhanceImageDataUrl } from "@/lib/studio/enhance";
 interface MediaLibraryProps {
   items: MediaItem[];
   onChange: () => void;
-  selectedIds?: string[];
-  onToggleSelect?: (id: string) => void;
+  selectedId?: string | null;
+  onSelect?: (id: string | null) => void;
   selectionMode?: boolean;
 }
 
 export function MediaLibrary({
   items,
   onChange,
-  selectedIds = [],
-  onToggleSelect,
+  selectedId = null,
+  onSelect,
   selectionMode = false,
 }: MediaLibraryProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -86,13 +86,24 @@ export function MediaLibrary({
     <section className="rounded-2xl border border-[rgb(var(--brand-200))] bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-serif text-lg text-[rgb(var(--brand-900))]">Media library</h2>
-        <button
-          type="button"
-          onClick={() => inputRef.current?.click()}
-          className="min-h-10 rounded-lg bg-[rgb(var(--brand-800))] px-3 py-2 text-sm font-medium text-white"
-        >
-          Upload photos
-        </button>
+        <div className="flex gap-2">
+          {selectionMode && selectedId ? (
+            <button
+              type="button"
+              onClick={() => onSelect?.(null)}
+              className="min-h-10 rounded-lg border border-[rgb(var(--brand-200))] px-3 py-2 text-sm font-medium text-[rgb(var(--brand-700))]"
+            >
+              Clear selection
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="min-h-10 rounded-lg bg-[rgb(var(--brand-800))] px-3 py-2 text-sm font-medium text-white"
+          >
+            Upload photos
+          </button>
+        </div>
         <input
           ref={inputRef}
           type="file"
@@ -114,9 +125,15 @@ export function MediaLibrary({
           Upload clinical or lifestyle photos to use in before/after merges and posts.
         </p>
       ) : (
-        <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <>
+          {selectionMode ? (
+            <p className="mt-3 text-xs text-[rgb(var(--brand-600))]">
+              Tap a photo to use it for publishing. Tap again to deselect.
+            </p>
+          ) : null}
+          <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {items.map((item) => {
-            const selected = selectedIds.includes(item.id);
+            const selected = selectedId === item.id;
             const expanded = expandedId === item.id;
             return (
               <li key={item.id} className="rounded-xl border border-[rgb(var(--brand-100))] overflow-hidden">
@@ -124,7 +141,9 @@ export function MediaLibrary({
                   type="button"
                   className={`relative block w-full ${selectionMode ? "ring-offset-2" : ""} ${selected ? "ring-2 ring-[rgb(var(--brand-600))]" : ""}`}
                   onClick={() => {
-                    if (selectionMode && onToggleSelect) onToggleSelect(item.id);
+                    if (selectionMode && onSelect) {
+                      onSelect(selected ? null : item.id);
+                    }
                   }}
                 >
                   <img
@@ -132,9 +151,19 @@ export function MediaLibrary({
                     alt={item.name}
                     className="aspect-square w-full object-cover"
                   />
+                  {selected ? (
+                    <span className="absolute left-1 top-1 rounded bg-[rgb(var(--brand-800))] px-1.5 py-0.5 text-[10px] font-medium text-white">
+                      For publish
+                    </span>
+                  ) : null}
                   {item.enhancementPrompt ? (
-                    <span className="absolute left-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
+                    <span className="absolute right-1 top-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
                       Enhanced
+                    </span>
+                  ) : null}
+                  {item.kind === "before-after" ? (
+                    <span className="absolute bottom-1 left-1 rounded bg-black/55 px-1.5 py-0.5 text-[10px] text-white">
+                      Merge
                     </span>
                   ) : null}
                 </button>
@@ -182,6 +211,7 @@ export function MediaLibrary({
             );
           })}
         </ul>
+        </>
       )}
     </section>
   );
