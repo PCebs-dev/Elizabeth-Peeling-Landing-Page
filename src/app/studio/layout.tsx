@@ -12,6 +12,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Ads Studio",
   applicationName: "Peeling Studio",
+  manifest: "/studio/manifest.webmanifest",
   description:
     "Private Instagram and Facebook creative studio for Dr. Elizabeth Peeling.",
   robots: { index: false, follow: false },

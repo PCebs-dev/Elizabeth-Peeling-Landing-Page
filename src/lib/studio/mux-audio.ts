@@ -1,17 +1,17 @@
 /**
  * Mux OpenAI TTS audio onto a silent Higgsfield MP4 (V1 voiceover).
  *
- * Prefers ffmpeg on PATH or FFMPEG_PATH. Works in local `next dev` on Windows
- * after installing ffmpeg (e.g. `winget install Gyan.FFmpeg` or Chocolatey).
- * Not serverless-friendly unless the host ships ffmpeg — Vercel serverless
- * typically will not; use a machine with ffmpeg for V1 voiceover.
+ * Resolution order: FFMPEG_PATH / FFMPEG_PATH, ffmpeg on PATH, then the
+ * `ffmpeg-static` binary bundled for Vercel Linux (and local Windows).
  */
 
 import { spawn } from "node:child_process";
 import { promises as fs } from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { gunzipSync } from "node:zlib";
 
 let cachedFfmpeg: string | null | undefined;
 
@@ -49,7 +49,8 @@ async function runCapture(
 export async function resolveFfmpegPath(): Promise<string | null> {
   if (cachedFfmpeg !== undefined) return cachedFfmpeg;
 
-  const fromEnv = process.env.FFMPEG_PATH?.trim();
+  const fromEnv =
+    process.env.FFMPEG_PATH?.trim() || process.env.FFMPEG_PATH?.trim();
   if (fromEnv) {
     cachedFfmpeg = fromEnv;
     return cachedFfmpeg;
@@ -67,8 +68,73 @@ export async function resolveFfmpegPath(): Promise<string | null> {
     }
   }
 
+  try {
+    const require = createRequire(import.meta.url);
+    const staticPath = require("ffmpeg-static") as string | null;
+    if (staticPath) {
+      if (process.platform !== "win32") {
+        await fs.chmod(staticPath, 0o755).catch(() => undefined);
+      }
+      cachedFfmpeg = staticPath;
+      return cachedFfmpeg;
+    }
+  } catch {
+    /* package missing or not traced */
+  }
+
+  const bundled = join(
+    process.cwd(),
+    "node_modules",
+    "ffmpeg-static",
+    process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg"
+  );
+  try {
+    await fs.access(bundled);
+    if (process.platform !== "win32") {
+      await fs.chmod(bundled, 0o755).catch(() => undefined);
+    }
+    cachedFfmpeg = bundled;
+    return cachedFfmpeg;
+  } catch {
+    /* not on disk — Vercel often skips ffmpeg-static's install script */
+  }
+
+  const downloaded = await downloadFfmpegStaticToTmp();
+  if (downloaded) {
+    cachedFfmpeg = downloaded;
+    return cachedFfmpeg;
+  }
+
   cachedFfmpeg = null;
   return null;
+}
+
+/** ffmpeg-static install is blocked on Vercel; fetch the Linux binary into /tmp. */
+async function downloadFfmpegStaticToTmp(): Promise<string | null> {
+  if (process.platform !== "linux") return null;
+  const dest = join(tmpdir(), "studio-ffmpeg");
+  try {
+    await fs.access(dest);
+    return dest;
+  } catch {
+    /* download */
+  }
+  const arch = process.arch === "arm64" ? "arm64" : "x64";
+  const url = `https://github.com/eugeneware/ffmpeg-static/releases/download/b6.1.1/ffmpeg-linux-${arch}.gz`;
+  try {
+    const res = await fetch(url, {
+      redirect: "follow",
+      headers: { "User-Agent": "elizabeth-studio-ffmpeg" },
+    });
+    if (!res.ok) return null;
+    const gz = Buffer.from(await res.arrayBuffer());
+    const bin = gunzipSync(gz);
+    await fs.writeFile(dest, bin, { mode: 0o755 });
+    await fs.chmod(dest, 0o755);
+    return dest;
+  } catch {
+    return null;
+  }
 }
 
 export async function isFfmpegAvailable(): Promise<boolean> {
@@ -77,8 +143,8 @@ export async function isFfmpegAvailable(): Promise<boolean> {
 
 export function ffmpegInstallHint(): string {
   return (
-    "V1 voiceover needs ffmpeg on this machine. Install it (Windows: winget install Gyan.FFmpeg), " +
-    "restart the terminal/dev server so ffmpeg is on PATH, or set FFMPEG_PATH to the ffmpeg.exe absolute path. " +
+    "V1 voiceover could not get ffmpeg (bundled binary or download). " +
+    "Retry once; locally you can install ffmpeg or set FFMPEG_PATH. " +
     "Silent motion-only videos work without ffmpeg."
   );
 }

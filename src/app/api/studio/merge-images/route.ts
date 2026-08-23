@@ -23,29 +23,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const before = form.get("before");
-  const after = form.get("after");
-  if (!(before instanceof File) || before.size === 0) {
+  const image = form.get("image");
+  if (!(image instanceof File) || image.size === 0) {
     return NextResponse.json(
-      { error: "Before image is required" },
+      { error: "Merged image is required" },
       { status: 400 }
     );
   }
-  if (!(after instanceof File) || after.size === 0) {
-    return NextResponse.json(
-      { error: "After image is required" },
-      { status: 400 }
-    );
+  if (!image.type.startsWith("image/")) {
+    return NextResponse.json({ error: "File must be an image" }, { status: 400 });
   }
-  if (!before.type.startsWith("image/") || !after.type.startsWith("image/")) {
+  if (image.size > 12 * 1024 * 1024) {
     return NextResponse.json(
-      { error: "Both files must be images" },
-      { status: 400 }
-    );
-  }
-  if (before.size > 12 * 1024 * 1024 || after.size > 12 * 1024 * 1024) {
-    return NextResponse.json(
-      { error: "Each image must be under 12MB" },
+      { error: "Image must be under 12MB" },
       { status: 400 }
     );
   }
@@ -57,15 +47,10 @@ export async function POST(request: Request) {
 
   try {
     const result = await mergeBeforeAfterImages({
-      before: {
-        bytes: new Uint8Array(await before.arrayBuffer()),
-        mimeType: before.type || "image/png",
-        filename: before.name || "before.png",
-      },
-      after: {
-        bytes: new Uint8Array(await after.arrayBuffer()),
-        mimeType: after.type || "image/png",
-        filename: after.name || "after.png",
+      composite: {
+        bytes: new Uint8Array(await image.arrayBuffer()),
+        mimeType: image.type || "image/png",
+        filename: image.name || "before-after.png",
       },
       enhance,
     });
@@ -76,9 +61,7 @@ export async function POST(request: Request) {
       provider: result.provider,
       model: result.model,
       enhance: result.enhance,
-      promptSummary: result.enhance
-        ? "Before/after merge with subtle skin & teeth polish"
-        : "Before/after side-by-side merge",
+      promptSummary: "Before and After as two separate photos on one still",
     });
   } catch (err) {
     const message =

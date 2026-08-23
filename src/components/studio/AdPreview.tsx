@@ -1,6 +1,5 @@
 "use client";
 
-import { formatHashtags } from "@/lib/studio/export";
 import { links } from "@/config/links";
 import type {
   GeneratedAd,
@@ -15,6 +14,11 @@ interface AdPreviewProps {
   photoFr?: StudioPhoto | null;
   language: StudioLanguage;
   onAdChange: (next: GeneratedAd) => void;
+  /** Removes this proposed ad only — never deletes library media. */
+  onDeleteProposed?: () => void;
+  onSaveProposed?: () => void;
+  saveBusy?: boolean;
+  alreadySaved?: boolean;
 }
 
 /** Soft preview truncate at a word boundary (full caption stays editable above). */
@@ -32,38 +36,20 @@ export function AdPreview({
   photoFr = null,
   language,
   onAdChange,
+  onDeleteProposed,
+  onSaveProposed,
+  saveBusy = false,
+  alreadySaved = false,
 }: AdPreviewProps) {
   const showFr = Boolean(ad.fr) && (language === "fr" || language === "both");
   const showEn = language === "en" || language === "both" || !ad.fr;
 
-  const enTags = formatHashtags(ad.hashtags);
-  const frTags = ad.fr ? formatHashtags(ad.fr.hashtags) : "";
-
-  function updateEn(field: "headline" | "caption" | "cta" | "hashtags", value: string) {
-    if (field === "hashtags") {
-      const tags = value
-        .split(/[\s,]+/)
-        .map((t) => t.replace(/^#/, "").trim())
-        .filter(Boolean);
-      onAdChange({ ...ad, hashtags: tags });
-      return;
-    }
+  function updateEn(field: "headline" | "caption" | "cta", value: string) {
     onAdChange({ ...ad, [field]: value });
   }
 
-  function updateFr(
-    field: "headline" | "caption" | "cta" | "hashtags",
-    value: string
-  ) {
+  function updateFr(field: "headline" | "caption" | "cta", value: string) {
     if (!ad.fr) return;
-    if (field === "hashtags") {
-      const tags = value
-        .split(/[\s,]+/)
-        .map((t) => t.replace(/^#/, "").trim())
-        .filter(Boolean);
-      onAdChange({ ...ad, fr: { ...ad.fr, hashtags: tags } });
-      return;
-    }
     onAdChange({ ...ad, fr: { ...ad.fr, [field]: value } });
   }
 
@@ -71,8 +57,6 @@ export function AdPreview({
     language === "fr" && ad.fr ? ad.fr.caption : ad.caption;
   const previewHeadline =
     language === "fr" && ad.fr ? ad.fr.headline : ad.headline;
-  const previewTags =
-    language === "fr" && ad.fr ? frTags : enTags;
   const previewCta = language === "fr" && ad.fr ? ad.fr.cta : ad.cta;
   const phonePhotoEn = photo;
   const phonePhotoFr = photoFr || photo;
@@ -87,7 +71,7 @@ export function AdPreview({
 
   return (
     <section className="space-y-6">
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-[rgb(var(--brand-900))]">
             Review
@@ -96,6 +80,28 @@ export function AdPreview({
             Angle: <span className="font-medium">{ad.angle}</span>
             {ad.channel === "paid" ? " · Paid" : " · Organic"}
           </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {onSaveProposed && !alreadySaved ? (
+            <button
+              type="button"
+              onClick={onSaveProposed}
+              disabled={saveBusy}
+              className="min-h-11 shrink-0 rounded-lg bg-[rgb(var(--brand-800))] px-3 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--brand-900))] disabled:opacity-60"
+            >
+              {saveBusy ? "Saving…" : "Save proposed ad"}
+            </button>
+          ) : null}
+          {onDeleteProposed ? (
+            <button
+              type="button"
+              onClick={onDeleteProposed}
+              className="min-h-11 shrink-0 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-50"
+              title="Removes this ad from review. Photos stay in the media library."
+            >
+              Delete proposed ad
+            </button>
+          ) : null}
         </div>
       </div>
 
@@ -107,7 +113,6 @@ export function AdPreview({
               isVideo={isVideoMedia(phonePhotoEn)}
               headline={ad.headline}
               caption={ad.caption}
-              hashtags={enTags}
               cta={ad.cta}
               lockCaptionHeight
             />
@@ -118,7 +123,6 @@ export function AdPreview({
               isVideo={isVideoMedia(phonePhotoFr)}
               headline={ad.fr.headline}
               caption={ad.fr.caption}
-              hashtags={frTags}
               cta={ad.fr.cta}
               lockCaptionHeight
             />
@@ -132,7 +136,6 @@ export function AdPreview({
               isVideo={isVideoMedia(phonePhoto)}
               headline={previewHeadline}
               caption={previewCaption}
-              hashtags={previewTags}
               cta={previewCta}
             />
           </PhoneFrame>
@@ -180,11 +183,9 @@ export function AdPreview({
             title="English caption"
             headline={ad.headline}
             caption={ad.caption}
-            hashtags={enTags}
             cta={ad.cta}
             onHeadline={(v) => updateEn("headline", v)}
             onCaption={(v) => updateEn("caption", v)}
-            onHashtags={(v) => updateEn("hashtags", v)}
             onCta={(v) => updateEn("cta", v)}
           />
         ) : null}
@@ -194,11 +195,9 @@ export function AdPreview({
             title="Légende française"
             headline={ad.fr.headline}
             caption={ad.fr.caption}
-            hashtags={frTags}
             cta={ad.fr.cta}
             onHeadline={(v) => updateFr("headline", v)}
             onCaption={(v) => updateFr("caption", v)}
-            onHashtags={(v) => updateFr("hashtags", v)}
             onCta={(v) => updateFr("cta", v)}
           />
         ) : null}
@@ -251,21 +250,17 @@ function EditableCaption({
   title,
   headline,
   caption,
-  hashtags,
   cta,
   onHeadline,
   onCaption,
-  onHashtags,
   onCta,
 }: {
   title: string;
   headline: string;
   caption: string;
-  hashtags: string;
   cta: string;
   onHeadline: (v: string) => void;
   onCaption: (v: string) => void;
-  onHashtags: (v: string) => void;
   onCta: (v: string) => void;
 }) {
   return (
@@ -288,15 +283,6 @@ function EditableCaption({
           value={caption}
           onChange={(e) => onCaption(e.target.value)}
           rows={8}
-          className="mt-1 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-3 py-2 text-sm text-[rgb(var(--brand-950))]"
-        />
-      </label>
-      <label className="block text-xs font-medium text-[rgb(var(--brand-700))]">
-        Hashtags
-        <textarea
-          value={hashtags}
-          onChange={(e) => onHashtags(e.target.value)}
-          rows={2}
           className="mt-1 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-3 py-2 text-sm text-[rgb(var(--brand-950))]"
         />
       </label>
@@ -373,7 +359,6 @@ function IgPost({
   isVideo,
   headline,
   caption,
-  hashtags,
   cta,
   lockCaptionHeight = false,
 }: {
@@ -381,7 +366,6 @@ function IgPost({
   isVideo?: boolean;
   headline: string;
   caption: string;
-  hashtags: string;
   cta: string;
   /** Keep EN/FR phone frames the same height in dual preview */
   lockCaptionHeight?: boolean;
@@ -410,9 +394,6 @@ function IgPost({
         <p className="line-clamp-2 font-semibold">{headline}</p>
         <p className="whitespace-pre-wrap text-neutral-800">
           {previewTruncate(caption, lockCaptionHeight ? 160 : 280)}
-        </p>
-        <p className="truncate text-sky-700">
-          {hashtags.split(" ").slice(0, 6).join(" ")}
         </p>
         <p className="truncate font-medium text-[rgb(var(--brand-700))]">
           {cta}

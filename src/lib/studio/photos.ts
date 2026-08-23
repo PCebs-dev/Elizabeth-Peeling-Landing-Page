@@ -41,6 +41,7 @@ interface StoredPhoto {
   linkedFrPhotoId?: string;
   pairOfPhotoId?: string;
   hasOnImageText?: boolean;
+  enhancedFromId?: string;
 }
 
 function toStudioPhoto(stored: StoredPhoto): StudioPhoto {
@@ -60,6 +61,7 @@ function toStudioPhoto(stored: StoredPhoto): StudioPhoto {
     linkedFrPhotoId: stored.linkedFrPhotoId,
     pairOfPhotoId: stored.pairOfPhotoId,
     hasOnImageText: stored.hasOnImageText,
+    enhancedFromId: stored.enhancedFromId,
     previewUrl: URL.createObjectURL(stored.blob),
   };
 }
@@ -71,9 +73,19 @@ export async function listPhotos(): Promise<StudioPhoto[]> {
     const req = tx.objectStore(STORE).getAll();
     req.onerror = () => reject(req.error ?? new Error("list failed"));
     req.onsuccess = () => {
-      const rows = (req.result as StoredPhoto[]).sort(
-        (a, b) => b.createdAt - a.createdAt
-      );
+      const rows = req.result as StoredPhoto[];
+      const byId = new Map(rows.map((r) => [r.id, r]));
+      const groupTime = (p: StoredPhoto) =>
+        (p.enhancedFromId && byId.get(p.enhancedFromId)?.createdAt) ||
+        p.createdAt;
+      rows.sort((a, b) => {
+        const gt = groupTime(b) - groupTime(a);
+        if (gt !== 0) return gt;
+        const aOrig = a.enhancedFromId ? 1 : 0;
+        const bOrig = b.enhancedFromId ? 1 : 0;
+        if (aOrig !== bOrig) return aOrig - bOrig;
+        return b.createdAt - a.createdAt;
+      });
       resolve(rows.map(toStudioPhoto));
     };
   });
@@ -107,7 +119,10 @@ export async function addPhoto(input: {
   linkedFrPhotoId?: string;
   pairOfPhotoId?: string;
   hasOnImageText?: boolean;
+  enhancedFromId?: string;
+  createdAt?: number;
   id?: string;
+  skipCloud?: boolean;
 }): Promise<StudioPhoto> {
   const mimeType =
     input.file instanceof File
@@ -125,13 +140,14 @@ export async function addPhoto(input: {
     mediaKind: mediaKindFromMime(mimeType),
     blob: input.file,
     note: input.note?.trim() ?? "",
-    createdAt: Date.now(),
+    createdAt: input.createdAt ?? Date.now(),
     source: input.source ?? "upload",
     promptSummary: input.promptSummary,
     galleryHidden: input.galleryHidden,
     linkedFrPhotoId: input.linkedFrPhotoId,
     pairOfPhotoId: input.pairOfPhotoId,
     hasOnImageText: input.hasOnImageText,
+    enhancedFromId: input.enhancedFromId,
   };
   const db = await openDb();
   await new Promise<void>((resolve, reject) => {
@@ -140,7 +156,13 @@ export async function addPhoto(input: {
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error("add failed"));
   });
-  return toStudioPhoto(stored);
+  const photo = toStudioPhoto(stored);
+  if (!input.skipCloud) {
+    void import("./library-sync").then((mod) =>
+      mod.persistPhotoToCloud(photo)
+    );
+  }
+  return photo;
 }
 
 export async function addPhotoFromBase64(input: {
@@ -154,6 +176,8 @@ export async function addPhotoFromBase64(input: {
   linkedFrPhotoId?: string;
   pairOfPhotoId?: string;
   hasOnImageText?: boolean;
+  enhancedFromId?: string;
+  createdAt?: number;
   id?: string;
 }): Promise<StudioPhoto> {
   const mimeType = input.mimeType || "image/png";
@@ -172,6 +196,8 @@ export async function addPhotoFromBase64(input: {
     linkedFrPhotoId: input.linkedFrPhotoId,
     pairOfPhotoId: input.pairOfPhotoId,
     hasOnImageText: input.hasOnImageText,
+    enhancedFromId: input.enhancedFromId,
+    createdAt: input.createdAt,
     id: input.id,
   });
 }
@@ -208,6 +234,15 @@ export async function linkFrTwin(
     galleryHidden: true,
     pairOfPhotoId: enPhotoId,
   });
+  void import("./library-sync").then((mod) => {
+    void mod.persistPhotoMetaToCloud(enPhotoId, {
+      linkedFrPhotoId: frPhotoId,
+    });
+    void mod.persistPhotoMetaToCloud(frPhotoId, {
+      galleryHidden: true,
+      pairOfPhotoId: enPhotoId,
+    });
+  });
 }
 
 export async function updatePhotoNote(
@@ -215,6 +250,9 @@ export async function updatePhotoNote(
   note: string
 ): Promise<void> {
   await patchPhoto(id, { note });
+  void import("./library-sync").then((mod) =>
+    mod.persistPhotoMetaToCloud(id, { note })
+  );
 }
 
 export async function updatePhotoCategory(
@@ -222,6 +260,9 @@ export async function updatePhotoCategory(
   categoryId: StudioCategoryId
 ): Promise<void> {
   await patchPhoto(id, { categoryId });
+  void import("./library-sync").then((mod) =>
+    mod.persistPhotoMetaToCloud(id, { categoryId })
+  );
 }
 
 export async function deletePhoto(id: string): Promise<void> {
@@ -251,6 +292,11 @@ export async function deletePhoto(id: string): Promise<void> {
     }
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error ?? new Error("delete failed"));
+  });
+  void import("./library-sync").then((mod) => {
+    for (const photoId of toDelete) {
+      void mod.removePhotoFromCloud(photoId);
+    }
   });
 }
 

@@ -74,7 +74,7 @@ Rules:
 - Never invent clinical outcomes, statistics, patient names, or fake reviews.
 - Never diagnose or promise results. Include a short disclaimer when claims could be read as outcome guarantees.
 - Captions and shortCaptions must be complete, grammatical sentences — never cut off mid-word or mid-phrase.
-- Hashtags: mix of treatment + local (Vaudreuil, West Island, Montreal area) — 8–14 tags, no spaces in tags. No emoji hashtags.
+- Do NOT put hashtags in caption, shortCaption, or paid primaryText. Instagram and Facebook captions are plain sentences only. Put tags only in the hashtags JSON array (optional; they will not be posted).
 - CTAs should point to booking a consult, calling, or SmileView when relevant to Invisalign.
 - French must be Quebec-friendly (vous, natural phrasing), not overly formal European French.
 - In French myth-bust copy, always write "Mythe :" — never leave the English word "Myth" in headlines or captions.
@@ -149,7 +149,7 @@ ${avoid}
 Return JSON with this shape:
 {
   "headline": "short punchy headline",
-  "caption": "full IG/FB caption with line breaks as \\n",
+  "caption": "full IG/FB caption with line breaks as \\n (no hashtags)",
   "shortCaption": "1-2 sentence short version",
   "hashtags": ["tag1", "tag2"],
   "cta": "call to action text",

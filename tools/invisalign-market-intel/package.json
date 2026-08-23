@@ -1,0 +1,19 @@
+{
+  "name": "invisalign-market-intel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local market research + Google/Meta ad blueprints for Invisalign (West Island / Vaudreuil)",
+  "type": "module",
+  "scripts": {
+    "research": "tsx src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

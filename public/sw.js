@@ -1,12 +1,12 @@
 /* Minimal PWA service worker for Social Ads Studio (installable shell). */
-const CACHE = "studio-shell-v2";
+const CACHE = "studio-shell-v3";
 const PRECACHE = [
   "/studio",
   "/studio/login",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
   "/icons/apple-touch-icon.png",
-  "/manifest.webmanifest",
+  "/studio/manifest.webmanifest",
 ];
 
 self.addEventListener("install", (event) => {

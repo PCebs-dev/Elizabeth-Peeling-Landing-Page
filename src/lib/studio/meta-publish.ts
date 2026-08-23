@@ -37,10 +37,32 @@ function cleanEnvId(value: string | undefined): string | null {
   return v;
 }
 
+function firstEnv(...keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = process.env[key];
+    if (value?.trim()) return value;
+  }
+  return undefined;
+}
+
 export function getMetaConfig(): MetaConfig {
-  const pageId = cleanEnvId(process.env.META_PAGE_ID);
-  const token = cleanEnvId(process.env.META_PAGE_ACCESS_TOKEN);
-  const igUserId = cleanEnvId(process.env.META_IG_USER_ID);
+  const pageId = cleanEnvId(
+    firstEnv(
+      "META_PAGE_ID",
+      "META_PAGE_ID",
+      "FACEBOOK_PAGE_ID"
+    )
+  );
+  const token = cleanEnvId(
+    firstEnv("META_PAGE_ACCESS_TOKEN", "META_PAGE_ACCESS_TOKEN")
+  );
+  const igUserId = cleanEnvId(
+    firstEnv(
+      "META_IG_USER_ID",
+      "META_IG_USER_ID",
+      "INSTAGRAM_BUSINESS_ACCOUNT_ID"
+    )
+  );
   const graphVersion =
     process.env.META_GRAPH_VERSION?.trim() || DEFAULT_GRAPH_VERSION;
 

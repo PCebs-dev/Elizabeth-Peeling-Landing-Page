@@ -36,8 +36,8 @@ interface GenerationPanelProps {
   onPrepareAiVideo: () => void;
   onMergeImages?: () => void;
   mergeLoading?: boolean;
-  mergeEnhance?: boolean;
-  onMergeEnhanceChange?: (value: boolean) => void;
+  mergePickSlot?: "before" | "after" | null;
+  onPickMergeSlot?: (slot: "before" | "after") => void;
   beforeMergePreviewUrl?: string | null;
   afterMergePreviewUrl?: string | null;
   onClearMergeBefore?: () => void;
@@ -74,8 +74,8 @@ export function GenerationPanel({
   onPrepareAiVideo,
   onMergeImages,
   mergeLoading = false,
-  mergeEnhance = false,
-  onMergeEnhanceChange,
+  mergePickSlot = null,
+  onPickMergeSlot,
   beforeMergePreviewUrl = null,
   afterMergePreviewUrl = null,
   onClearMergeBefore,
@@ -277,11 +277,22 @@ export function GenerationPanel({
             Before / after merge
           </p>
           <p className="mt-1 text-xs text-[rgb(var(--brand-600))]">
-            Tap a library photo for Before, then another for After.
+            Tap the Before box, then a library photo. Same for After. Tap the
+            photo again to deselect.
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
-            <div className="overflow-hidden rounded-lg border border-[rgb(var(--brand-200))] bg-white">
-              <div className="aspect-square bg-[rgb(var(--brand-100))]">
+            <div
+              className={`overflow-hidden rounded-lg border bg-white ${
+                mergePickSlot === "before"
+                  ? "border-[rgb(var(--brand-600))] ring-2 ring-[rgb(var(--brand-300))]"
+                  : "border-[rgb(var(--brand-200))]"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => onPickMergeSlot?.("before")}
+                className="block w-full aspect-square bg-[rgb(var(--brand-100))]"
+              >
                 {beforeMergePreviewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -290,11 +301,13 @@ export function GenerationPanel({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-[rgb(var(--brand-600))]">
-                    Before
-                  </div>
+                  <span className="flex h-full items-center justify-center px-2 text-xs text-[rgb(var(--brand-600))]">
+                    {mergePickSlot === "before"
+                      ? "Tap a library photo"
+                      : "Tap to choose Before"}
+                  </span>
                 )}
-              </div>
+              </button>
               <div className="flex items-center justify-between px-2 py-1.5">
                 <span className="text-[11px] font-medium text-[rgb(var(--brand-800))]">
                   Before
@@ -310,8 +323,18 @@ export function GenerationPanel({
                 ) : null}
               </div>
             </div>
-            <div className="overflow-hidden rounded-lg border border-[rgb(var(--brand-200))] bg-white">
-              <div className="aspect-square bg-[rgb(var(--brand-100))]">
+            <div
+              className={`overflow-hidden rounded-lg border bg-white ${
+                mergePickSlot === "after"
+                  ? "border-[rgb(var(--brand-600))] ring-2 ring-[rgb(var(--brand-300))]"
+                  : "border-[rgb(var(--brand-200))]"
+              }`}
+            >
+              <button
+                type="button"
+                onClick={() => onPickMergeSlot?.("after")}
+                className="block w-full aspect-square bg-[rgb(var(--brand-100))]"
+              >
                 {afterMergePreviewUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
@@ -320,11 +343,13 @@ export function GenerationPanel({
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-xs text-[rgb(var(--brand-600))]">
-                    After
-                  </div>
+                  <span className="flex h-full items-center justify-center px-2 text-xs text-[rgb(var(--brand-600))]">
+                    {mergePickSlot === "after"
+                      ? "Tap a library photo"
+                      : "Tap to choose After"}
+                  </span>
                 )}
-              </div>
+              </button>
               <div className="flex items-center justify-between px-2 py-1.5">
                 <span className="text-[11px] font-medium text-[rgb(var(--brand-800))]">
                   After
@@ -341,19 +366,6 @@ export function GenerationPanel({
               </div>
             </div>
           </div>
-          <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-[rgb(var(--brand-800))]">
-            <input
-              type="checkbox"
-              checked={mergeEnhance}
-              onChange={(e) => onMergeEnhanceChange?.(e.target.checked)}
-              disabled={busy}
-              className="mt-0.5 h-4 w-4 rounded border-[rgb(var(--brand-300))]"
-            />
-            <span>
-              Subtle polish — softer skin &amp; slightly whiter teeth (keep it
-              natural; focus stays on the smile change)
-            </span>
-          </label>
         </div>
       ) : null}
     </section>

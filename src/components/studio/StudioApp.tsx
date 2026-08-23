@@ -24,6 +24,7 @@ import {
   withOnImageTextLine,
 } from "@/lib/studio/image-context";
 import { pickShortOnImageHeadline } from "@/lib/studio/image-prompt";
+import { stripHashtagsFromCaption } from "@/lib/studio/sanitize-copy";
 import type {
   GeneratedAd,
   GeneratedAdCopy,
@@ -49,7 +50,6 @@ import { AdPreview } from "@/components/studio/AdPreview";
 import { GenerationPanel } from "@/components/studio/GenerationPanel";
 import { CaptionPanel } from "@/components/studio/CaptionPanel";
 import { VideoPrepPanel } from "@/components/studio/VideoPrepPanel";
-import { HistoryRail } from "@/components/studio/HistoryRail";
 import {
   SavedAdsRail,
   type SavedAdListItem,
@@ -73,6 +73,37 @@ function decodeStudioHeader(value: string | null): string {
     return decodeURIComponent(value);
   } catch {
     return value;
+  }
+}
+
+async function blobToBase64(blob: Blob): Promise<string> {
+  const bytes = new Uint8Array(await blob.arrayBuffer());
+  const chunk = 0x8000;
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+async function compressImageForRetouch(blob: Blob): Promise<Blob> {
+  try {
+    const bitmap = await createImageBitmap(blob);
+    const max = 1024;
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return blob;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
+    const compressed = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.88)
+    );
+    return compressed && compressed.size > 0 ? compressed : blob;
+  } catch {
+    return blob;
   }
 }
 
@@ -136,8 +167,11 @@ export function StudioApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [beforeMergeId, setBeforeMergeId] = useState<string | null>(null);
   const [afterMergeId, setAfterMergeId] = useState<string | null>(null);
-  const [mergeEnhance, setMergeEnhance] = useState(false);
+  const [mergePickSlot, setMergePickSlot] = useState<"before" | "after" | null>(
+    null
+  );
   const [mergeLoading, setMergeLoading] = useState(false);
+  const [enhancingId, setEnhancingId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<StudioCategoryId>("invisalign");
   /** Caption theme — defaults from selected/created media; overridable for mix-and-match */
   const [captionCategoryId, setCaptionCategoryId] =
@@ -196,6 +230,7 @@ export function StudioApp() {
     null
   );
   const [libraryReady, setLibraryReady] = useState(false);
+  const [libraryCloudOk, setLibraryCloudOk] = useState<boolean | null>(null);
   const [metaFacebookReady, setMetaFacebookReady] = useState(false);
   const [metaInstagramReady, setMetaInstagramReady] = useState(false);
   const [publishLang, setPublishLang] = useState<"en" | "fr">("en");
@@ -209,9 +244,24 @@ export function StudioApp() {
     kind: "success" | "error";
     message: string;
   } | null>(null);
+  const [savingAd, setSavingAd] = useState(false);
   const photosRef = useRef<StudioPhoto[]>([]);
 
   const refreshPhotos = useCallback(async () => {
+    try {
+      const {
+        hydratePhotosFromCloud,
+        requestPersistentStorage,
+        syncLocalPhotosToCloud,
+      } = await import("@/lib/studio/library-sync");
+      await requestPersistentStorage();
+      await hydratePhotosFromCloud();
+      const local = await listPhotos();
+      const cloudOk = await syncLocalPhotosToCloud(local);
+      setLibraryCloudOk(cloudOk);
+    } catch {
+      setLibraryCloudOk(false);
+    }
     const next = await listPhotos();
     revokePreviewUrls(photosRef.current);
     photosRef.current = next;
@@ -312,12 +362,12 @@ export function StudioApp() {
       return savedPreviewEn;
     }
     if (language === "both") return selectedPhoto;
-    if (
-      language === "fr" &&
-      activeAd?.photoIdFr &&
-      photos.some((p) => p.id === activeAd.photoIdFr)
-    ) {
-      return photos.find((p) => p.id === activeAd.photoIdFr) ?? selectedPhoto;
+    if (language === "fr") {
+      const twinId =
+        activeAd?.photoIdFr || selectedPhoto?.linkedFrPhotoId || null;
+      if (twinId) {
+        return photos.find((p) => p.id === twinId) ?? selectedPhoto;
+      }
     }
     return selectedPhoto;
   }, [
@@ -406,15 +456,29 @@ export function StudioApp() {
       photo &&
       (photo.mediaKind === "video" || photo.mimeType.startsWith("video/"));
 
-    // Before/after merge picks (images only): 1st → Before, 2nd → After
     if (!isVideo) {
-      if (!beforeMergeId) {
-        setBeforeMergeId(pickId);
-      } else if (!afterMergeId && pickId !== beforeMergeId) {
-        setAfterMergeId(pickId);
-      } else if (pickId !== beforeMergeId && pickId !== afterMergeId) {
-        setAfterMergeId(pickId);
+      if (mergePickSlot === "before") {
+        if (beforeMergeId === pickId) setBeforeMergeId(null);
+        else {
+          setBeforeMergeId(pickId);
+          if (afterMergeId === pickId) setAfterMergeId(null);
+        }
+        setMergePickSlot(null);
+      } else if (mergePickSlot === "after") {
+        if (afterMergeId === pickId) setAfterMergeId(null);
+        else {
+          setAfterMergeId(pickId);
+          if (beforeMergeId === pickId) setBeforeMergeId(null);
+        }
+        setMergePickSlot(null);
+      } else if (beforeMergeId === pickId) {
+        setBeforeMergeId(null);
+      } else if (afterMergeId === pickId) {
+        setAfterMergeId(null);
       }
+    } else if (mergePickSlot) {
+      setError("Merge uses photos only, not videos");
+      setMergePickSlot(null);
     }
 
     // Keep Review & edit EN/FR media in sync with the library selection
@@ -470,6 +534,81 @@ export function StudioApp() {
     setPhotos((prev) =>
       prev.map((p) => (p.id === id ? { ...p, note } : p))
     );
+  }
+
+  async function handleDigitalEnhance(id: string, notes: string) {
+    setError("");
+    setWarning("");
+    const photo = photos.find((p) => p.id === id);
+    if (!photo?.blob) {
+      setError("Photo is missing — reselect it from the library");
+      return;
+    }
+    if (
+      photo.mediaKind === "video" ||
+      photo.mimeType.startsWith("video/")
+    ) {
+      setError("Digital enhance works with photos only");
+      return;
+    }
+
+    setEnhancingId(id);
+    try {
+      const uploadBlob = await compressImageForRetouch(photo.blob);
+      if (uploadBlob.size > 2_400_000) {
+        setError(
+          "This photo is too large to enhance on the live site. Try a smaller still."
+        );
+        return;
+      }
+      const imageBase64 = await blobToBase64(uploadBlob);
+      const res = await fetch("/api/studio/retouch-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageBase64,
+          mimeType: uploadBlob.type || "image/jpeg",
+          filename: photo.name || "photo.png",
+          notes,
+        }),
+      });
+      const data = (await res.json()) as {
+        imageBase64?: string;
+        mimeType?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.imageBase64) {
+        setError(data.error || "Digital enhance failed");
+        return;
+      }
+
+      const rootId = photo.enhancedFromId || photo.id;
+      const family = photos.filter(
+        (p) => p.id === rootId || p.enhancedFromId === rootId
+      );
+      const createdAt =
+        Math.min(...family.map((p) => p.createdAt), photo.createdAt) - 1;
+
+      const saved = await addPhotoFromBase64({
+        categoryId: photo.categoryId,
+        base64: data.imageBase64,
+        mimeType: data.mimeType || "image/png",
+        name: `${photo.name.replace(/\.[^.]+$/, "")}-enhanced.png`,
+        note: notes.trim() || "Digital enhance",
+        promptSummary: notes.trim()
+          ? `Digital enhance: ${notes.trim()}`
+          : "Digital enhance",
+        enhancedFromId: rootId,
+        createdAt,
+      });
+      await refreshPhotos();
+      setSelectedId(saved.id);
+      setWarning("Enhanced copy saved next to the original in the library.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Digital enhance failed");
+    } finally {
+      setEnhancingId(null);
+    }
   }
 
   async function generateAdFromPhoto() {
@@ -796,49 +935,54 @@ export function StudioApp() {
 
     setMergeLoading(true);
     try {
-      const form = new FormData();
-      form.append("before", before.blob, before.name || "before.png");
-      form.append("after", after.blob, after.name || "after.png");
-      form.append("enhance", mergeEnhance ? "true" : "false");
+      const { stitchBeforeAfterToPng } = await import(
+        "@/lib/studio/stitch-before-after"
+      );
+      const compositeEn = await stitchBeforeAfterToPng(
+        before.blob,
+        after.blob,
+        "en"
+      );
+      const compositeFr = await stitchBeforeAfterToPng(
+        before.blob,
+        after.blob,
+        "fr"
+      );
 
-      const res = await fetch("/api/studio/merge-images", {
-        method: "POST",
-        body: form,
-      });
-      const data = (await res.json()) as {
-        imageBase64?: string;
-        mimeType?: string;
-        promptSummary?: string;
-        warning?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.imageBase64) {
-        setError(data.error || "Merge images failed");
-        return;
-      }
-      if (data.warning) setWarning(data.warning);
-
-      const saved = await addPhotoFromBase64({
+      const savedEn = await addPhoto({
         categoryId,
-        base64: data.imageBase64,
-        mimeType: data.mimeType || "image/png",
+        file: compositeEn,
         name: `before-after-${Date.now()}.png`,
-        note: mergeEnhance
-          ? "Before/after merge · subtle polish"
-          : "Before/after merge",
-        promptSummary: data.promptSummary,
+        note: "Before/after merge",
+        source: "ai",
+        hasOnImageText: true,
+        promptSummary:
+          "EN text · Before and After as two separate photos on one still",
       });
+      const savedFr = await addPhoto({
+        categoryId,
+        file: compositeFr,
+        name: `avant-apres-${Date.now()}.png`,
+        note: "Fusion avant/après",
+        source: "ai",
+        hasOnImageText: true,
+        galleryHidden: true,
+        pairOfPhotoId: savedEn.id,
+        promptSummary:
+          "FR text · Avant et Après comme deux photos distinctes",
+      });
+      await linkFrTwin(savedEn.id, savedFr.id);
       await refreshPhotos();
-      setSelectedId(saved.id);
+      setSelectedId(savedEn.id);
       setCaptionCategoryId(categoryId);
       clearSavedPreview();
       setBeforeMergeId(null);
       setAfterMergeId(null);
       setWarning(
-        "Merged before/after saved to the library and selected — generate a caption when ready."
+        "Merged before/after saved (English labels in the library; French AVANT/APRÈS twin is attached for FR Instagram)."
       );
-    } catch {
-      setError("Network error — try again");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Network error — try again");
     } finally {
       setMergeLoading(false);
     }
@@ -1523,6 +1667,84 @@ export function StudioApp() {
     await refreshSavedAds();
   }
 
+  async function saveCurrentAd() {
+    if (!activeAd) return;
+    if (savedAds.some((a) => a.id === activeAd.id)) {
+      setWarning("This ad is already in Saved ads.");
+      return;
+    }
+
+    const enPhoto = viewingSavedAd ? savedPreviewEn : selectedPhoto;
+    const frPhoto = viewingSavedAd ? savedPreviewFr : previewPhotoFr;
+    if (!enPhoto?.blob || enPhoto.mimeType.startsWith("video/")) {
+      setError(
+        "Save needs a still photo. Pick the image for this caption, then tap Save."
+      );
+      return;
+    }
+
+    setSavingAd(true);
+    setError("");
+    try {
+      const enBlob = await compressImageForRetouch(enPhoto.blob);
+      const imageBase64 = await blobToBase64(enBlob);
+      let imageFrBase64: string | undefined;
+      let imageFrMimeType: string | undefined;
+      if (frPhoto?.blob && frPhoto.mimeType.startsWith("image/")) {
+        const frBlob = await compressImageForRetouch(frPhoto.blob);
+        imageFrBase64 = await blobToBase64(frBlob);
+        imageFrMimeType = frBlob.type || "image/jpeg";
+      }
+
+      const record: SavedStudioAd = {
+        id: activeAd.id,
+        source: "manual",
+        status: "ready",
+        platforms: ["instagram", "facebook"],
+        format: "static",
+        categoryId: activeAd.categoryId,
+        channel: activeAd.channel,
+        language: activeAd.language,
+        angle: activeAd.angle,
+        headline: activeAd.headline,
+        caption: activeAd.caption,
+        shortCaption: activeAd.shortCaption,
+        hashtags: activeAd.hashtags,
+        cta: activeAd.cta,
+        disclaimer: activeAd.disclaimer,
+        paid: activeAd.paid,
+        fr: activeAd.fr,
+        imageMimeType: enBlob.type || "image/jpeg",
+        imageBase64,
+        imageFrMimeType,
+        imageFrBase64,
+        promptSummary: activeAd.promptSummary,
+        createdAt: activeAd.createdAt,
+        favorite: activeAd.favorite,
+      };
+
+      await putLocalSavedAds([record]);
+      const res = await fetch("/api/studio/saved-ads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(record),
+      });
+      if (!res.ok) {
+        const data = await readResponseJson<{ error?: string }>(res);
+        throw new Error(data?.error || "Save failed");
+      }
+      await refreshSavedAds();
+      setSavedActiveId(record.id);
+      setWarning("Saved. Find it under Saved ads.");
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Could not save this ad — try again."
+      );
+    } finally {
+      setSavingAd(false);
+    }
+  }
+
   async function runCalendar(options?: {
     force?: boolean;
     date?: string;
@@ -1625,10 +1847,11 @@ export function StudioApp() {
 
   async function onCopyCaption() {
     if (!activeAd) return;
-    const text =
+    const text = stripHashtagsFromCaption(
       language === "fr" && activeAd.fr
-        ? `${activeAd.fr.caption}\n\n${formatHashtags(activeAd.fr.hashtags)}`
-        : `${activeAd.caption}\n\n${formatHashtags(activeAd.hashtags)}`;
+        ? activeAd.fr.caption
+        : activeAd.caption
+    );
     await copyToClipboard(text);
   }
 
@@ -1653,7 +1876,14 @@ export function StudioApp() {
   }
 
   async function onPublish(platform: "facebook" | "instagram") {
-    if (!activeAd || !publishPhotoSource) return;
+    if (!activeAd) {
+      setError("Generate a caption first, then publish to Instagram or Facebook.");
+      return;
+    }
+    if (!publishPhotoSource) {
+      setError("Select a photo in the library first.");
+      return;
+    }
 
     if (
       publishPhotoSource.mediaKind === "video" ||
@@ -1665,28 +1895,22 @@ export function StudioApp() {
       return;
     }
 
-    if (platform === "facebook" && !metaFacebookReady) {
-      setError("Facebook is not configured — add META_PAGE_ID and META_PAGE_ACCESS_TOKEN");
-      return;
-    }
-    if (platform === "instagram" && !metaInstagramReady) {
-      setError(
-        "Instagram is not configured — finish linking IG and set META_IG_USER_ID"
-      );
-      return;
-    }
-
-    const useFr = publishLang === "fr" && activeAd.fr;
+    const useFr = publishLang === "fr";
     const copy = useFr && activeAd.fr ? activeAd.fr : activeAd;
-    const caption = `${copy.caption}\n\n${formatHashtags(copy.hashtags)}`.trim();
-    const publishPhoto =
-      viewingSavedAd
-        ? useFr && savedPreviewFr
-          ? savedPreviewFr
-          : savedPreviewEn!
-        : useFr && activeAd.photoIdFr
-          ? photos.find((p) => p.id === activeAd.photoIdFr) || selectedPhoto!
-          : selectedPhoto!;
+    const caption = stripHashtagsFromCaption(copy.caption);
+    const liveFrPhoto =
+      (activeAd.photoIdFr &&
+        photos.find((p) => p.id === activeAd.photoIdFr)) ||
+      (selectedPhoto?.linkedFrPhotoId &&
+        photos.find((p) => p.id === selectedPhoto.linkedFrPhotoId)) ||
+      null;
+    const publishPhoto = viewingSavedAd
+      ? useFr && savedPreviewFr
+        ? savedPreviewFr
+        : savedPreviewEn!
+      : useFr && liveFrPhoto
+        ? liveFrPhoto
+        : selectedPhoto!;
 
     const label = platform === "facebook" ? "Facebook" : "Instagram";
     const placementLabel = publishPlacement === "story" ? "Story" : "feed post";
@@ -1739,6 +1963,9 @@ export function StudioApp() {
         : `Sent ${sentAs} to ${label}. Open ${label} to confirm it appears.`;
       setWarning(successMsg);
       setPublishStatus({ kind: "success", message: successMsg });
+      if (activeAd && !savedAds.some((a) => a.id === activeAd.id)) {
+        void saveCurrentAd();
+      }
     } catch {
       const failMsg = `${label} publish failed — check connection and Meta credentials`;
       setError(failMsg);
@@ -1759,19 +1986,15 @@ export function StudioApp() {
           <h1 className="mt-1 font-[family-name:var(--font-playfair)] text-2xl text-[rgb(var(--brand-900))] sm:text-4xl">
             Social Ads Studio
           </h1>
-          <p className="mt-2 hidden max-w-xl text-sm text-[rgb(var(--brand-700))] sm:block">
-            Upload your own photos or generate AI images, write captions for
-            Instagram &amp; Facebook, then export or publish directly to your
-            business accounts.
-          </p>
+          {libraryCloudOk === false ? (
+            <p className="mt-2 max-w-xl text-sm text-amber-800">
+              Cloud library is not connected on this deployment. Photos may
+              disappear after you leave this browser until Blob storage is
+              linked.
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
-          <a
-            href="/studio/themes"
-            className="min-h-11 shrink-0 rounded-lg border border-[rgb(var(--brand-300))] bg-white px-3 py-2 text-sm font-medium text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-50))]"
-          >
-            Themes
-          </a>
           <button
             type="button"
             onClick={() => void logout()}
@@ -1792,11 +2015,14 @@ export function StudioApp() {
             selectedId={selectedId}
             beforeMergeId={beforeMergeId}
             afterMergeId={afterMergeId}
+            mergePickSlot={mergePickSlot}
             categories={STUDIO_CATEGORIES}
             onUpload={handleUpload}
             onSelect={selectPhoto}
             onDelete={handleDeletePhoto}
             onNoteChange={handleNoteChange}
+            onDigitalEnhance={(id, notes) => void handleDigitalEnhance(id, notes)}
+            enhancingId={enhancingId}
           />
           </div>
 
@@ -1808,7 +2034,7 @@ export function StudioApp() {
               rerunningId={calendarRerunningId}
               onSelect={(id) => void onSelectSavedAd(id)}
               onFavorite={(id) => void toggleSavedFavorite(id)}
-              onDiscard={(id) => void discardSaved(id)}
+              onDelete={(id) => void discardSaved(id)}
               onRunToday={() => void runTodaysCalendar()}
               onRerunToday={() => void runCalendar({ force: true })}
               onRerunAd={(ad) =>
@@ -1865,16 +2091,42 @@ export function StudioApp() {
             onPrepareAiVideo={() => void prepareAiVideo()}
             onMergeImages={() => void mergeBeforeAfterImages()}
             mergeLoading={mergeLoading}
-            mergeEnhance={mergeEnhance}
-            onMergeEnhanceChange={setMergeEnhance}
+            mergePickSlot={mergePickSlot}
+            onPickMergeSlot={(slot) => {
+              setError("");
+              if (slot === "before" && beforeMergeId) {
+                setBeforeMergeId(null);
+                setMergePickSlot(null);
+                return;
+              }
+              if (slot === "after" && afterMergeId) {
+                setAfterMergeId(null);
+                setMergePickSlot(null);
+                return;
+              }
+              if (mergePickSlot === slot) {
+                setMergePickSlot(null);
+              } else {
+                setMergePickSlot(slot);
+                document
+                  .getElementById("studio-media-library")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+            }}
             beforeMergePreviewUrl={
               photos.find((p) => p.id === beforeMergeId)?.previewUrl ?? null
             }
             afterMergePreviewUrl={
               photos.find((p) => p.id === afterMergeId)?.previewUrl ?? null
             }
-            onClearMergeBefore={() => setBeforeMergeId(null)}
-            onClearMergeAfter={() => setAfterMergeId(null)}
+            onClearMergeBefore={() => {
+              setBeforeMergeId(null);
+              if (mergePickSlot === "before") setMergePickSlot(null);
+            }}
+            onClearMergeAfter={() => {
+              setAfterMergeId(null);
+              if (mergePickSlot === "after") setMergePickSlot(null);
+            }}
             videoLoading={videoLoading}
             videoPrepLoading={videoPrepLoading}
             videoPrepActive={Boolean(videoPrep)}
@@ -1968,6 +2220,15 @@ export function StudioApp() {
             onCopyCaption={() => void onCopyCaption()}
             onCopyHashtags={() => void onCopyHashtags()}
             onDownloadPack={() => void onDownloadPack()}
+            onSave={
+              activeAd &&
+              !viewingSavedAd &&
+              !savedAds.some((a) => a.id === activeAd.id)
+                ? () => void saveCurrentAd()
+                : undefined
+            }
+            saveBusy={savingAd}
+            saveLabel="Save"
             onToggleFavorite={
               activeAd
                 ? () => {
@@ -2006,6 +2267,20 @@ export function StudioApp() {
               photoFr={previewPhotoFr}
               language={language}
               onAdChange={updateActiveAd}
+              alreadySaved={savedAds.some((a) => a.id === activeAd.id)}
+              saveBusy={savingAd}
+              onSaveProposed={
+                viewingSavedAd || savedAds.some((a) => a.id === activeAd.id)
+                  ? undefined
+                  : () => void saveCurrentAd()
+              }
+              onDeleteProposed={() => {
+                if (savedViewAd && savedActiveId === activeAd.id) {
+                  void discardSaved(activeAd.id);
+                } else {
+                  discardAd(activeAd.id);
+                }
+              }}
             />
           ) : (
             <div className="rounded-2xl border border-dashed border-[rgb(var(--brand-300))] bg-white/60 px-6 py-10 text-center text-sm text-[rgb(var(--brand-600))]">
@@ -2014,13 +2289,13 @@ export function StudioApp() {
           )}
           </div>
 
-          {activeAd && publishPhotoSource ? (
+          {activeAd || publishPhotoSource ? (
             <section className="order-7 rounded-2xl border border-[rgb(var(--brand-300))] bg-white p-4 sm:p-6">
               <h2 className="text-lg font-semibold text-[rgb(var(--brand-900))]">
                 Publish
               </h2>
 
-              {activeAd.fr && publishPlacement === "post" ? (
+              {activeAd?.fr && publishPlacement === "post" ? (
                 <label className="mt-4 block text-sm">
                   <span className="font-medium text-[rgb(var(--brand-800))]">
                     Language
@@ -2076,30 +2351,26 @@ export function StudioApp() {
                 <button
                   type="button"
                   onClick={() => void onPublish("instagram")}
-                  disabled={publishLoading || !metaInstagramReady}
+                  disabled={publishLoading}
                   className="min-h-12 rounded-lg border-2 border-[rgb(var(--brand-700))] bg-white px-4 py-3 text-sm font-semibold text-[rgb(var(--brand-900))] transition hover:bg-[rgb(var(--brand-50))] disabled:opacity-50"
                 >
                   {publishLoading && publishTarget === "instagram"
                     ? "Publishing…"
-                    : metaInstagramReady
-                      ? publishPlacement === "story"
-                        ? "Instagram Story"
-                        : "Instagram"
-                      : "Instagram not configured"}
+                    : publishPlacement === "story"
+                      ? "Publish to Instagram Story"
+                      : "Publish to Instagram"}
                 </button>
                 <button
                   type="button"
                   onClick={() => void onPublish("facebook")}
-                  disabled={publishLoading || !metaFacebookReady}
+                  disabled={publishLoading}
                   className="min-h-12 rounded-lg bg-[rgb(var(--brand-800))] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[rgb(var(--brand-900))] disabled:opacity-50"
                 >
                   {publishLoading && publishTarget === "facebook"
                     ? "Publishing…"
-                    : metaFacebookReady
-                      ? publishPlacement === "story"
-                        ? "Facebook Story"
-                        : "Facebook"
-                      : "Facebook not configured"}
+                    : publishPlacement === "story"
+                      ? "Publish to Facebook Story"
+                      : "Publish to Facebook"}
                 </button>
               </div>
 
@@ -2120,13 +2391,6 @@ export function StudioApp() {
         </div>
 
         <div className="order-2 hidden space-y-4 lg:order-2 lg:block">
-          <HistoryRail
-            history={history}
-            activeId={savedViewAd ? null : activeAd?.id ?? null}
-            onSelect={onSelectHistory}
-            onFavorite={toggleFavorite}
-            onDiscard={discardAd}
-          />
           <SavedAdsRail
             ads={savedAds}
             activeId={savedActiveId}
@@ -2134,7 +2398,7 @@ export function StudioApp() {
             rerunningId={calendarRerunningId}
             onSelect={(id) => void onSelectSavedAd(id)}
             onFavorite={(id) => void toggleSavedFavorite(id)}
-            onDiscard={(id) => void discardSaved(id)}
+            onDelete={(id) => void discardSaved(id)}
             onRunToday={() => void runTodaysCalendar()}
             onRerunToday={() => void runCalendar({ force: true })}
             onRerunAd={(ad) =>
@@ -2145,16 +2409,6 @@ export function StudioApp() {
                 replaceAdId: ad.id,
               })
             }
-          />
-        </div>
-
-        <div className="order-8 lg:hidden">
-          <HistoryRail
-            history={history}
-            activeId={savedViewAd ? null : activeAd?.id ?? null}
-            onSelect={onSelectHistory}
-            onFavorite={toggleFavorite}
-            onDiscard={discardAd}
           />
         </div>
       </div>

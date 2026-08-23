@@ -26,6 +26,9 @@ interface CaptionPanelProps {
   onCopyCaption: () => void;
   onCopyHashtags: () => void;
   onDownloadPack: () => void;
+  onSave?: () => void;
+  saveLabel?: string;
+  saveBusy?: boolean;
   onToggleFavorite?: () => void;
   onDiscard?: () => void;
 }
@@ -51,6 +54,9 @@ export function CaptionPanel({
   onCopyCaption,
   onCopyHashtags,
   onDownloadPack,
+  onSave,
+  saveLabel = "Save",
+  saveBusy = false,
   onToggleFavorite,
   onDiscard,
 }: CaptionPanelProps) {
@@ -157,6 +163,16 @@ export function CaptionPanel({
           >
             Share pack
           </button>
+          {onSave ? (
+            <button
+              type="button"
+              onClick={onSave}
+              disabled={busy || saveBusy}
+              className="min-h-11 rounded-lg bg-[rgb(var(--brand-800))] px-3 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--brand-900))] disabled:opacity-60"
+            >
+              {saveBusy ? "Saving…" : saveLabel}
+            </button>
+          ) : null}
           {onToggleFavorite ? (
             <button
               type="button"

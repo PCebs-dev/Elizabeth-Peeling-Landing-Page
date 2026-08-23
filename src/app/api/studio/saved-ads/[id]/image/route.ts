@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { STUDIO_COOKIE, verifySessionToken } from "@/lib/studio/auth";
-import { getSavedAd } from "@/lib/studio/saved-ads";
+import { getSavedAd, saveAd } from "@/lib/studio/saved-ads";
+import { fetchSavedAdCloud } from "@/lib/studio/saved-ads-cloud";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -13,7 +14,14 @@ export async function GET(request: Request, { params }: Params) {
   }
 
   const { id } = await params;
-  const ad = getSavedAd(id);
+  let ad = getSavedAd(id);
+  if (!ad) {
+    const remote = await fetchSavedAdCloud(id);
+    if (remote) {
+      saveAd(remote);
+      ad = remote;
+    }
+  }
   if (!ad || ad.status === "discarded") {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

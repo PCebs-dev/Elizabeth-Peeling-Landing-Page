@@ -7,6 +7,7 @@ import {
   publishToStories,
   type PublishPlatform,
 } from "@/lib/studio/meta-publish";
+import { stripHashtagsFromCaption } from "@/lib/studio/sanitize-copy";
 
 type PublishPlacement = "post" | "story";
 
@@ -83,7 +84,9 @@ export async function POST(request: Request) {
 
   const captionRaw = form.get("caption");
   const caption =
-    typeof captionRaw === "string" ? captionRaw.trim() : "";
+    typeof captionRaw === "string"
+      ? stripHashtagsFromCaption(captionRaw)
+      : "";
   if (placement === "post" && !caption) {
     return NextResponse.json({ error: "Caption is required" }, { status: 400 });
   }

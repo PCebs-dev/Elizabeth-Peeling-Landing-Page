@@ -54,6 +54,17 @@ export function sanitizeHumanText(input: string): string {
   return text;
 }
 
+/** IG/FB captions should never include #tags. */
+export function stripHashtagsFromCaption(input: string): string {
+  return input
+    .replace(/(^|\s)#[\p{L}\p{N}_]+/gu, "$1")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]{2,}/g, " ").trimEnd())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 /**
  * French marketing copy / on-image headlines.
  * Fixes English leftovers like "Myth:" → "Mythe :".
@@ -75,7 +86,9 @@ export function sanitizeAdCopy(ad: GeneratedAdCopy): GeneratedAdCopy {
   const cleanPaid = ad.paid
     ? {
         ...ad.paid,
-        primaryText: sanitizeHumanText(ad.paid.primaryText),
+        primaryText: stripHashtagsFromCaption(
+          sanitizeHumanText(ad.paid.primaryText)
+        ),
         headline: sanitizeHumanText(ad.paid.headline),
         description: sanitizeHumanText(ad.paid.description),
         audienceSuggestion: sanitizeHumanText(ad.paid.audienceSuggestion),
@@ -87,8 +100,12 @@ export function sanitizeAdCopy(ad: GeneratedAdCopy): GeneratedAdCopy {
     ? {
         ...ad.fr,
         headline: sanitizeFrenchMarketingText(ad.fr.headline),
-        caption: sanitizeFrenchMarketingText(ad.fr.caption),
-        shortCaption: sanitizeFrenchMarketingText(ad.fr.shortCaption),
+        caption: stripHashtagsFromCaption(
+          sanitizeFrenchMarketingText(ad.fr.caption)
+        ),
+        shortCaption: stripHashtagsFromCaption(
+          sanitizeFrenchMarketingText(ad.fr.shortCaption)
+        ),
         cta: sanitizeFrenchMarketingText(ad.fr.cta),
         disclaimer: sanitizeFrenchMarketingText(ad.fr.disclaimer),
         hashtags: ad.fr.hashtags.map((h) =>
@@ -96,7 +113,9 @@ export function sanitizeAdCopy(ad: GeneratedAdCopy): GeneratedAdCopy {
         ),
         paid: ad.fr.paid
           ? {
-              primaryText: sanitizeFrenchMarketingText(ad.fr.paid.primaryText),
+              primaryText: stripHashtagsFromCaption(
+                sanitizeFrenchMarketingText(ad.fr.paid.primaryText)
+              ),
               headline: sanitizeFrenchMarketingText(ad.fr.paid.headline),
               description: sanitizeFrenchMarketingText(ad.fr.paid.description),
             }
@@ -107,8 +126,8 @@ export function sanitizeAdCopy(ad: GeneratedAdCopy): GeneratedAdCopy {
   return {
     ...ad,
     headline: sanitizeHumanText(ad.headline),
-    caption: sanitizeHumanText(ad.caption),
-    shortCaption: sanitizeHumanText(ad.shortCaption),
+    caption: stripHashtagsFromCaption(sanitizeHumanText(ad.caption)),
+    shortCaption: stripHashtagsFromCaption(sanitizeHumanText(ad.shortCaption)),
     cta: sanitizeHumanText(ad.cta),
     disclaimer: sanitizeHumanText(ad.disclaimer),
     hashtags: ad.hashtags.map((h) => sanitizeHumanText(h).replace(/^#+/, "")),

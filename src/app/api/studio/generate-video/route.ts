@@ -13,8 +13,8 @@ import {
 } from "@/lib/studio/generate-video";
 import {
   ffmpegInstallHint,
-  isFfmpegAvailable,
   muxVoiceoverOntoVideo,
+  resolveFfmpegPath,
 } from "@/lib/studio/mux-audio";
 import {
   generateSyncTalkingHead,
@@ -177,9 +177,8 @@ export async function POST(request: Request) {
     }
   }
 
-  if (voiceMode === "v1_voiceover" && !(await isFfmpegAvailable())) {
-    return NextResponse.json({ error: ffmpegInstallHint() }, { status: 503 });
-  }
+  const ffmpegWarm =
+    voiceMode === "v1_voiceover" ? resolveFfmpegPath() : Promise.resolve(null);
 
   if (voiceMode === "v2_talking_head" && !isSyncLabsConfigured()) {
     return NextResponse.json(
@@ -270,6 +269,13 @@ export async function POST(request: Request) {
     let voiceMeta = "";
 
     if (ttsPromise && voiceMode === "v1_voiceover") {
+      const ffmpegPath = await ffmpegWarm;
+      if (!ffmpegPath) {
+        return NextResponse.json(
+          { error: ffmpegInstallHint() },
+          { status: 503 }
+        );
+      }
       const tts = await ttsPromise;
       outBytes = await muxVoiceoverOntoVideo({
         videoBytes: Buffer.from(video.bytes),

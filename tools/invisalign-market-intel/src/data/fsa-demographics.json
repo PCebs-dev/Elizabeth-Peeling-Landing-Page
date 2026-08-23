@@ -1,0 +1,118 @@
+{
+  "source": "Statistics Canada / open FSA context (approximate, for ad geo prioritization only)",
+  "notes": "High-level aggregates — not individual people. Refresh periodically from StatCan census profiles.",
+  "fsas": {
+    "J7V": {
+      "area": "Vaudreuil-Dorion / Ile-Perrot corridor",
+      "medianAgeBand": "35-44",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "primary"
+    },
+    "J7T": {
+      "area": "Saint-Lazare",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "primary"
+    },
+    "J0P": {
+      "area": "Hudson / surrounding",
+      "medianAgeBand": "45-54",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "primary"
+    },
+    "J7W": {
+      "area": "Pincourt",
+      "medianAgeBand": "35-44",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-provincial-median",
+      "priority": "primary"
+    },
+    "H9R": {
+      "area": "Pointe-Claire",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "secondary"
+    },
+    "H9S": {
+      "area": "Pointe-Claire / Dorval edge",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "secondary"
+    },
+    "H9W": {
+      "area": "Beaconsfield",
+      "medianAgeBand": "45-54",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "secondary"
+    },
+    "H9J": {
+      "area": "Kirkland",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "secondary"
+    },
+    "H9H": {
+      "area": "Kirkland / Pierrefonds edge",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "secondary"
+    },
+    "H9A": {
+      "area": "Dollard-des-Ormeaux",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-to-above-median",
+      "priority": "secondary"
+    },
+    "H9B": {
+      "area": "Dollard-des-Ormeaux",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-to-above-median",
+      "priority": "secondary"
+    },
+    "H9G": {
+      "area": "Dollard-des-Ormeaux",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-to-above-median",
+      "priority": "secondary"
+    },
+    "H9P": {
+      "area": "Dorval",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-to-above-median",
+      "priority": "secondary"
+    },
+    "H8Y": {
+      "area": "Pierrefonds",
+      "medianAgeBand": "35-44",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-provincial-median",
+      "priority": "secondary"
+    },
+    "H8Z": {
+      "area": "Pierrefonds",
+      "medianAgeBand": "35-44",
+      "bilingualShare": "high",
+      "householdIncomeBand": "near-provincial-median",
+      "priority": "secondary"
+    },
+    "H9X": {
+      "area": "Sainte-Anne-de-Bellevue / Baie-d'Urfe",
+      "medianAgeBand": "40-49",
+      "bilingualShare": "high",
+      "householdIncomeBand": "above-provincial-median",
+      "priority": "secondary"
+    }
+  }
+}

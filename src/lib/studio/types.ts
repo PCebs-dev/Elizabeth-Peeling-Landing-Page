@@ -124,7 +124,7 @@ export const STUDIO_VIDEO_VOICE_MODES: {
   {
     id: "v1_voiceover",
     label: "V1 · Voiceover",
-    hint: "Spoken script as voiceover over the clip (mouth won’t match)",
+    hint: "Spoken script over the clip (mouth won’t match) — works on Vercel",
   },
   {
     id: "v2_talking_head",
@@ -185,6 +185,8 @@ export interface StudioPhoto {
   pairOfPhotoId?: string;
   /** True when the creative has intentional on-image marketing typography */
   hasOnImageText?: boolean;
+  /** Original library photo this enhance was created from */
+  enhancedFromId?: string;
 }
 
 export function mediaKindFromMime(mimeType: string): StudioMediaKind {

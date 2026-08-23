@@ -70,6 +70,9 @@ export function saveAd(ad: SavedStudioAd): SavedStudioAd {
       err instanceof Error ? err.message : err
     );
   }
+  void import("./saved-ads-cloud").then((mod) =>
+    mod.persistSavedAdCloud(ad).catch(() => undefined)
+  );
   return ad;
 }
 
@@ -85,8 +88,21 @@ export function updateSavedAd(
 
 export function discardSavedAd(id: string): boolean {
   const existing = getSavedAd(id);
-  if (!existing) return false;
-  saveAd({ ...existing, status: "discarded" });
+  if (existing) {
+    try {
+      ensureDir();
+      fs.writeFileSync(
+        adPath(existing.id),
+        JSON.stringify({ ...existing, status: "discarded" }, null, 2),
+        "utf8"
+      );
+    } catch {
+      /* /tmp may be unavailable — cloud delete still removes the proposal */
+    }
+  }
+  void import("./saved-ads-cloud").then((mod) =>
+    mod.deleteSavedAdCloud(id).catch(() => undefined)
+  );
   return true;
 }
 
