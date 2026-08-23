@@ -1,0 +1,12 @@
+[
+  {
+    "id": "c9a59382-4b03-47b8-8fa2-376f952befe7",
+    "name": "Before / After",
+    "url": "/api/studio/media/c9a59382-4b03-47b8-8fa2-376f952befe7",
+    "createdAt": 1787487978037,
+    "updatedAt": 1787487978037,
+    "kind": "before-after",
+    "contentType": "image/jpeg",
+    "storage": "local"
+  }
+]
