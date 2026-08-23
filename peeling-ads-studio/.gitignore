@@ -11,4 +11,8 @@ npm-debug.log*
 next-env.d.ts
 .vercel
 /data/studio-media/
+/data/studio/saved-ads/*.json
+!/data/studio/saved-ads/.gitkeep
+/data/studio/upcoming-themes.json
+/data/studio/calendar-history.json
 .env*

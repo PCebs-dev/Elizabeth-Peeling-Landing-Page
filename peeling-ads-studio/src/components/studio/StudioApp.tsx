@@ -8,6 +8,7 @@ import { MediaLibrary } from "./MediaLibrary";
 import { BeforeAfterPanel } from "./BeforeAfterPanel";
 import { PublishPanel } from "./PublishPanel";
 import { HistoryPanel } from "./HistoryPanel";
+import { CalendarAdsPanel } from "./CalendarAdsPanel";
 
 export function StudioApp() {
   const router = useRouter();
@@ -124,6 +125,13 @@ export function StudioApp() {
           imageDataUrl={activeCreative}
           onPublished={() => setHistoryKey((k) => k + 1)}
           onStartAgain={startAgain}
+        />
+
+        <CalendarAdsPanel
+          onSelectImage={(dataUrl) => {
+            setActiveCreativeId(null);
+            setActiveCreativeOverride(dataUrl);
+          }}
         />
 
         <HistoryPanel
