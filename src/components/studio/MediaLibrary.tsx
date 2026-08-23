@@ -138,6 +138,7 @@ export function MediaLibrary({
           ref={inputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           multiple
           className="hidden"
           onChange={(e) => void handleUpload(e.target.files)}
