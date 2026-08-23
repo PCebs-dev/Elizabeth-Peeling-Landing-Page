@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { MediaItem } from "@/lib/studio/media-store";
-import { listMedia } from "@/lib/studio/media-store";
+import { getMediaDisplayUrl, listMedia } from "@/lib/studio/media-store";
 import { MediaLibrary } from "./MediaLibrary";
 import { BeforeAfterPanel } from "./BeforeAfterPanel";
 import { PublishPanel } from "./PublishPanel";
@@ -15,24 +15,33 @@ export function StudioApp() {
   const [activeCreativeId, setActiveCreativeId] = useState<string | null>(null);
   const [activeCreativeOverride, setActiveCreativeOverride] = useState<string | null>(null);
   const [historyKey, setHistoryKey] = useState(0);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const [loadingMedia, setLoadingMedia] = useState(true);
 
   const refreshMedia = useCallback(async () => {
-    const next = await listMedia();
-    setItems(next);
-    setActiveCreativeId((current) => {
-      if (current && !next.some((item) => item.id === current)) return null;
-      return current;
-    });
+    setLoadingMedia(true);
+    setMediaError(null);
+    try {
+      const next = await listMedia();
+      setItems(next);
+      setActiveCreativeId((current) => {
+        if (current && !next.some((item) => item.id === current)) return null;
+        return current;
+      });
+    } catch (e) {
+      setMediaError(e instanceof Error ? e.message : "Could not load media library");
+    } finally {
+      setLoadingMedia(false);
+    }
   }, []);
 
   useEffect(() => {
     void refreshMedia();
   }, [refreshMedia]);
 
+  const activeItem = items.find((item) => item.id === activeCreativeId);
   const activeCreative =
-    activeCreativeOverride ??
-    items.find((item) => item.id === activeCreativeId)?.dataUrl ??
-    null;
+    activeCreativeOverride ?? (activeItem ? getMediaDisplayUrl(activeItem) : null);
 
   function selectCreative(id: string | null) {
     setActiveCreativeId(id);
@@ -95,6 +104,15 @@ export function StudioApp() {
       )}
 
       <div className="space-y-6">
+        {mediaError ? (
+          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+            {mediaError}
+          </p>
+        ) : null}
+        {loadingMedia ? (
+          <p className="text-sm text-[rgb(var(--brand-600))]">Loading your media library…</p>
+        ) : null}
+
         <MediaLibrary
           items={items}
           onChange={() => void refreshMedia()}
@@ -117,7 +135,7 @@ export function StudioApp() {
         <HistoryPanel
           refreshKey={historyKey}
           onSelect={(item) => {
-            const match = items.find((i) => i.dataUrl === item.imageDataUrl);
+            const match = items.find((i) => i.dataUrl === item.imageDataUrl || getMediaDisplayUrl(i) === item.imageDataUrl);
             if (match) selectCreative(match.id);
             else {
               setActiveCreativeId(null);

@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import type { MediaItem } from "@/lib/studio/media-store";
 import {
   createMediaFromFile,
-  newMediaId,
-  saveMedia,
+  getMediaDisplayUrl,
+  resolveMediaDataUrl,
+  saveDataUrlToLibrary,
 } from "@/lib/studio/media-store";
 import { enhanceImageDataUrl, mergeBeforeAfterSideBySide } from "@/lib/studio/enhance";
 import { ImageCompareSlider } from "./ImageCompareSlider";
@@ -102,8 +103,8 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
     setBusy(true);
     setError(null);
     try {
-      let beforeUrl = beforeItem.dataUrl;
-      let afterUrl = afterItem.dataUrl;
+      let beforeUrl = await resolveMediaDataUrl(beforeItem);
+      let afterUrl = await resolveMediaDataUrl(afterItem);
       if (enhanceBefore) {
         beforeUrl = await enhanceImageDataUrl(beforeUrl, {
           prompt: beforePrompt,
@@ -138,13 +139,9 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
       if (!preview) return;
 
       const mergedUrl = await mergeBeforeAfterSideBySide(preview.before, preview.after);
-      const now = Date.now();
-      const item = await saveMedia({
-        id: newMediaId(),
+      const item = await saveDataUrlToLibrary({
         name: "Before / After",
         dataUrl: mergedUrl,
-        createdAt: now,
-        updatedAt: now,
         kind: "before-after",
         beforeId: beforeId ?? undefined,
         afterId: afterId ?? undefined,
@@ -209,7 +206,7 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
                   <div className="mt-2 aspect-square overflow-hidden rounded-lg bg-[rgb(var(--brand-100))]">
                     {selected ? (
                       <img
-                        src={selected.dataUrl}
+                        src={getMediaDisplayUrl(selected)}
                         alt={`${side} selected`}
                         className="h-full w-full object-cover"
                       />
@@ -317,7 +314,7 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
                           }`}
                         >
                           <img
-                            src={p.dataUrl}
+                            src={getMediaDisplayUrl(p)}
                             alt={p.name}
                             className="aspect-square w-full object-cover"
                           />

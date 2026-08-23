@@ -5,8 +5,9 @@ import type { MediaItem } from "@/lib/studio/media-store";
 import {
   createMediaFromFile,
   deleteMedia,
-  saveMedia,
-  newMediaId,
+  getMediaDisplayUrl,
+  resolveMediaDataUrl,
+  saveDataUrlToLibrary,
 } from "@/lib/studio/media-store";
 import { enhanceImageDataUrl } from "@/lib/studio/enhance";
 
@@ -52,17 +53,14 @@ export function MediaLibrary({
     setBusyId(item.id);
     setError(null);
     try {
-      const enhancedUrl = await enhanceImageDataUrl(item.dataUrl, {
+      const sourceUrl = await resolveMediaDataUrl(item);
+      const enhancedUrl = await enhanceImageDataUrl(sourceUrl, {
         prompt,
         auto: !prompt,
       });
-      const now = Date.now();
-      await saveMedia({
-        id: newMediaId(),
+      await saveDataUrlToLibrary({
         name: `${item.name} (enhanced)`,
         dataUrl: enhancedUrl,
-        createdAt: now,
-        updatedAt: now,
         kind: item.kind,
         enhancementPrompt: prompt || "auto enhance",
         sourceId: item.id,
@@ -147,7 +145,7 @@ export function MediaLibrary({
                   }}
                 >
                   <img
-                    src={item.dataUrl}
+                    src={getMediaDisplayUrl(item)}
                     alt={item.name}
                     className="aspect-square w-full object-cover"
                   />

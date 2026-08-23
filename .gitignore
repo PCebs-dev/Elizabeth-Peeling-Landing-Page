@@ -43,3 +43,6 @@ next-env.d.ts
 /birdeye-*.html
 /birdeye-*.json
 /mappca.html
+
+# local studio media (dev fallback when BLOB_READ_WRITE_TOKEN is unset)
+/data/studio-media/
