@@ -1,5 +1,5 @@
 import type { MediaItem, MediaKind } from "./media-types";
-import { compressImageFile, blobToDataUrl } from "./image-compress";
+import { compressImageFile, blobToDataUrl, dataUrlToBlob } from "./image-compress";
 
 export type { MediaItem, MediaKind } from "./media-types";
 export { getMediaDisplayUrl } from "./media-types";
@@ -57,8 +57,14 @@ async function uploadBlob(params: {
   beforeId?: string;
   afterId?: string;
 }): Promise<MediaItem> {
+  const safeName =
+    params.name
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .slice(0, 60) || "photo";
   const form = new FormData();
-  form.append("image", params.blob, `${params.name || "photo"}.jpg`);
+  form.append("image", params.blob, `${safeName}.jpg`);
   form.append("name", params.name);
   form.append("kind", params.kind ?? "photo");
   if (params.id) form.append("id", params.id);
@@ -68,7 +74,13 @@ async function uploadBlob(params: {
   if (params.afterId) form.append("afterId", params.afterId);
 
   const res = await fetch("/api/studio/media", { method: "POST", body: form });
-  const data = (await res.json()) as { item?: MediaItem; error?: string };
+  const raw = await res.text();
+  let data: { item?: MediaItem; error?: string };
+  try {
+    data = JSON.parse(raw) as { item?: MediaItem; error?: string };
+  } catch {
+    throw new Error(res.ok ? "Upload failed" : `Upload failed (${res.status})`);
+  }
   if (!res.ok || !data.item) {
     throw new Error(data.error ?? "Upload failed");
   }
@@ -105,7 +117,7 @@ async function migrateLegacyMedia(): Promise<void> {
   for (const item of legacy) {
     if (!item.dataUrl || syncedIds.has(item.id)) continue;
     try {
-      const blob = await fetch(item.dataUrl).then((r) => r.blob());
+      const blob = dataUrlToBlob(item.dataUrl);
       await uploadBlob({
         blob,
         id: item.id,
@@ -156,7 +168,7 @@ export async function createMediaFromFile(file: File, name?: string): Promise<Me
 
 export async function saveMedia(item: Omit<MediaItem, "url"> & { url?: string; dataUrl?: string }): Promise<MediaItem> {
   if (item.dataUrl) {
-    const blob = await fetch(item.dataUrl).then((r) => r.blob());
+    const blob = dataUrlToBlob(item.dataUrl);
     return uploadBlob({
       blob,
       id: item.id,
@@ -190,7 +202,10 @@ export async function resolveMediaDataUrl(item: MediaItem): Promise<string> {
   return blobToDataUrl(blob);
 }
 
-export async function dataUrlToBlob(dataUrl: string): Promise<Blob> {
+export async function dataUrlToBlobForPublish(dataUrl: string): Promise<Blob> {
+  if (dataUrl.startsWith("data:")) {
+    return dataUrlToBlob(dataUrl);
+  }
   const res = await fetch(dataUrl, { credentials: "include" });
   if (!res.ok) throw new Error("Could not load image for publishing");
   return res.blob();
@@ -236,7 +251,7 @@ export async function saveDataUrlToLibrary(params: {
   sourceId?: string;
   enhancementPrompt?: string;
 }): Promise<MediaItem> {
-  const blob = await dataUrlToBlob(params.dataUrl);
+  const blob = await dataUrlToBlobForPublish(params.dataUrl);
   return uploadBlob({
     blob,
     name: params.name,

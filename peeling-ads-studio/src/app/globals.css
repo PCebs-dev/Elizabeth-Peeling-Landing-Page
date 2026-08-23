@@ -1,0 +1,31 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-50: 250 247 245;
+  --brand-100: 243 237 230;
+  --brand-200: 231 221 208;
+  --brand-300: 214 196 170;
+  --brand-400: 206 170 117;
+  --brand-500: 184 148 96;
+  --brand-600: 156 124 79;
+  --brand-700: 122 98 66;
+  --brand-800: 89 84 72;
+  --brand-900: 64 58 50;
+  --brand-950: 42 38 32;
+
+  --background: #faf7f5;
+  --foreground: #2a2620;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

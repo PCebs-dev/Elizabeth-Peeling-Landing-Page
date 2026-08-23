@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { PublishPlatform, StudioFormat, StudioLanguage } from "@/lib/studio/types";
-import { dataUrlToBlob, type LocalHistoryItem, saveHistory, loadHistory } from "@/lib/studio/media-store";
+import { dataUrlToBlobForPublish, type LocalHistoryItem, saveHistory, loadHistory } from "@/lib/studio/media-store";
 
 interface PublishPanelProps {
   imageDataUrl: string | null;
@@ -68,7 +68,7 @@ export function PublishPanel({ imageDataUrl, onPublished, onStartAgain }: Publis
     setPublishing(platform);
     setStatus(null);
     try {
-      const blob = await dataUrlToBlob(imageDataUrl);
+      const blob = await dataUrlToBlobForPublish(imageDataUrl);
       const form = new FormData();
       form.append("platform", platform);
       form.append("language", language);

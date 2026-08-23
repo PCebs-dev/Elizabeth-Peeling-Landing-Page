@@ -59,6 +59,10 @@ npm start
 
 Deploy to [Vercel](https://vercel.com) or Netlify. Connect your custom domain (e.g. `elizabethpeeling.ca`).
 
+## Ads Studio (separate app)
+
+The private Instagram/Facebook creative studio lives in **[`peeling-ads-studio/`](peeling-ads-studio/)** and should be deployed as its **own GitHub repo and Vercel project**. See **[`docs/TWO_REPOS.md`](docs/TWO_REPOS.md)** for setup steps.
+
 ## Compliance Notes
 
 - No medical diagnoses via chatbot
