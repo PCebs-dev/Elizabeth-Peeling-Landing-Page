@@ -17,7 +17,10 @@ interface BeforeAfterPanelProps {
 }
 
 export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanelProps) {
-  const photos = useMemo(() => items.filter((i) => i.kind === "photo"), [items]);
+  const photos = useMemo(
+    () => items.filter((i) => i.kind === "photo" || i.kind === "before-after"),
+    [items],
+  );
   const [beforeId, setBeforeId] = useState<string | null>(null);
   const [afterId, setAfterId] = useState<string | null>(null);
   const [enhanceBefore, setEnhanceBefore] = useState(false);
@@ -47,10 +50,10 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
     setPickTarget(null);
   }
 
-  async function buildPreview() {
+  async function buildPreview(): Promise<{ before: string; after: string } | null> {
     if (!beforeItem || !afterItem) {
       setError("Choose both a before and an after photo.");
-      return;
+      return null;
     }
     setBusy(true);
     setError(null);
@@ -71,22 +74,26 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
       }
       setPreviewBefore(beforeUrl);
       setPreviewAfter(afterUrl);
+      return { before: beforeUrl, after: afterUrl };
     } catch (e) {
       setError(e instanceof Error ? e.message : "Preview failed");
+      return null;
     } finally {
       setBusy(false);
     }
   }
 
   async function saveMerged() {
-    if (!previewBefore || !previewAfter) {
-      await buildPreview();
-      return;
-    }
     setBusy(true);
     setError(null);
     try {
-      const mergedUrl = await mergeBeforeAfterSideBySide(previewBefore, previewAfter);
+      const preview =
+        previewBefore && previewAfter
+          ? { before: previewBefore, after: previewAfter }
+          : await buildPreview();
+      if (!preview) return;
+
+      const mergedUrl = await mergeBeforeAfterSideBySide(preview.before, preview.after);
       const now = Date.now();
       const item = await saveMedia({
         id: newMediaId(),
@@ -170,15 +177,16 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
                   type="checkbox"
                   checked={enhanceOn}
                   onChange={(e) => setEnhanceOn(e.target.checked)}
+                  className="h-4 w-4 rounded border-[rgb(var(--brand-300))]"
                 />
-                Digitally enhance {side} photo
+                Enhance {side} photo
               </label>
               {enhanceOn ? (
                 <textarea
                   rows={2}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder={`Describe ${side} enhancement…`}
+                  placeholder={`Describe how to enhance the ${side} photo (e.g. whiten teeth, brighten, softer skin tones). Leave blank for auto-enhance.`}
                   className="mt-2 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-2 py-1.5 text-xs"
                 />
               ) : null}
