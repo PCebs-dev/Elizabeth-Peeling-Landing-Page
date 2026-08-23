@@ -42,16 +42,14 @@ export async function POST(request: NextRequest) {
   const cookie = request.cookies.get(STUDIO_COOKIE)?.value;
   if (!(await verifyStudioSessionValue(cookie))) return unauthorized();
 
-  const contentType = request.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().includes("multipart/form-data")) {
-    return NextResponse.json({ error: "Expected multipart form data" }, { status: 400 });
-  }
-
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return NextResponse.json({ error: "Could not parse upload" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Expected multipart form data with an image file" },
+      { status: 400 },
+    );
   }
 
   const image = form.get("image");

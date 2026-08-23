@@ -24,16 +24,11 @@ export async function POST(request: NextRequest) {
   const cookie = request.cookies.get(STUDIO_COOKIE)?.value;
   if (!(await verifyStudioSessionValue(cookie))) return unauthorized();
 
-  const contentType = request.headers.get("content-type") ?? "";
-  if (!contentType.toLowerCase().includes("multipart/form-data")) {
-    return badRequest("Expected multipart form data");
-  }
-
   let form: FormData;
   try {
     form = await request.formData();
   } catch {
-    return badRequest("Could not parse multipart form data");
+    return badRequest("Expected multipart form data with an image file");
   }
 
   const platform = asPlatform(form.get("platform"));
