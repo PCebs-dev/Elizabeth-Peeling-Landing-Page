@@ -7,9 +7,10 @@ import { dataUrlToBlob, type LocalHistoryItem, saveHistory, loadHistory } from "
 interface PublishPanelProps {
   imageDataUrl: string | null;
   onPublished?: () => void;
+  onStartAgain?: () => void;
 }
 
-export function PublishPanel({ imageDataUrl, onPublished }: PublishPanelProps) {
+export function PublishPanel({ imageDataUrl, onPublished, onStartAgain }: PublishPanelProps) {
   const [language, setLanguage] = useState<StudioLanguage>("fr");
   const [format, setFormat] = useState<StudioFormat>("post");
   const [cta, setCta] = useState("Réservez votre consultation dès aujourd'hui");
@@ -117,9 +118,33 @@ export function PublishPanel({ imageDataUrl, onPublished }: PublishPanelProps) {
     }
   }
 
+  const hasDraft =
+    Boolean(imageDataUrl) ||
+    Boolean(caption.trim()) ||
+    Boolean(title.trim()) ||
+    tags.length > 0;
+
   return (
     <section className="rounded-2xl border border-[rgb(var(--brand-200))] bg-white p-4 shadow-sm">
-      <h2 className="font-serif text-lg text-[rgb(var(--brand-900))]">Publish</h2>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-serif text-lg text-[rgb(var(--brand-900))]">Review</h2>
+          <p className="mt-1 text-xs text-[rgb(var(--brand-600))]">
+            {format === "story" ? "Story" : "Post"} · {language.toUpperCase()}
+            {tags.length > 0 ? ` · ${tags.slice(0, 2).join(" · ")}` : ""}
+          </p>
+        </div>
+        {hasDraft ? (
+          <button
+            type="button"
+            onClick={() => onStartAgain?.()}
+            disabled={publishing !== null || generating}
+            className="shrink-0 rounded-lg border border-[rgb(var(--brand-300))] px-3 py-2 text-xs font-medium text-[rgb(var(--brand-800))] disabled:opacity-60"
+          >
+            Start again
+          </button>
+        ) : null}
+      </div>
 
       <label className="mt-4 block text-sm font-medium text-[rgb(var(--brand-800))]">
         Language

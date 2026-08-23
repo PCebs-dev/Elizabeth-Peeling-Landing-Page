@@ -20,6 +20,7 @@ export function StudioApp() {
   const [mergePickTarget, setMergePickTarget] = useState<"before" | "after" | null>(null);
   const [mergeBeforeId, setMergeBeforeId] = useState<string | null>(null);
   const [mergeAfterId, setMergeAfterId] = useState<string | null>(null);
+  const [adSession, setAdSession] = useState(0);
 
   const refreshMedia = useCallback(async () => {
     setLoadingMedia(true);
@@ -54,6 +55,14 @@ export function StudioApp() {
   function clearCreative() {
     setActiveCreativeId(null);
     setActiveCreativeOverride(null);
+  }
+
+  function startAgain() {
+    clearCreative();
+    setMergeBeforeId(null);
+    setMergeAfterId(null);
+    setMergePickTarget(null);
+    setAdSession((session) => session + 1);
   }
 
   async function signOut() {
@@ -148,8 +157,10 @@ export function StudioApp() {
         />
 
         <PublishPanel
+          key={adSession}
           imageDataUrl={activeCreative}
           onPublished={() => setHistoryKey((k) => k + 1)}
+          onStartAgain={startAgain}
         />
 
         <HistoryPanel
