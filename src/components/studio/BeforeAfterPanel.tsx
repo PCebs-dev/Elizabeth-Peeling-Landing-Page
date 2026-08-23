@@ -15,16 +15,30 @@ interface BeforeAfterPanelProps {
   items: MediaItem[];
   onChange: () => void;
   onMerged?: (item: MediaItem) => void;
+  pickTarget?: "before" | "after" | null;
+  onPickTargetChange?: (target: "before" | "after" | null) => void;
+  beforeId?: string | null;
+  afterId?: string | null;
+  onBeforeIdChange?: (id: string | null) => void;
+  onAfterIdChange?: (id: string | null) => void;
 }
 
-export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanelProps) {
+export function BeforeAfterPanel({
+  items,
+  onChange,
+  onMerged,
+  pickTarget = null,
+  onPickTargetChange,
+  beforeId: beforeIdProp = null,
+  afterId: afterIdProp = null,
+  onBeforeIdChange,
+  onAfterIdChange,
+}: BeforeAfterPanelProps) {
   const [open, setOpen] = useState(false);
   const photos = useMemo(
     () => items.filter((i) => i.kind === "photo" || i.kind === "before-after"),
     [items],
   );
-  const [beforeId, setBeforeId] = useState<string | null>(null);
-  const [afterId, setAfterId] = useState<string | null>(null);
   const [enhanceBefore, setEnhanceBefore] = useState(false);
   const [enhanceAfter, setEnhanceAfter] = useState(false);
   const [beforePrompt, setBeforePrompt] = useState("");
@@ -33,11 +47,24 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
   const [previewAfter, setPreviewAfter] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pickTarget, setPickTarget] = useState<"before" | "after" | null>(null);
 
+  const beforeId = beforeIdProp;
+  const afterId = afterIdProp;
   const beforeItem = photos.find((p) => p.id === beforeId) ?? null;
   const afterItem = photos.find((p) => p.id === afterId) ?? null;
   const hasSelection = beforeId !== null || afterId !== null || previewBefore !== null;
+
+  function setBeforeId(id: string | null) {
+    onBeforeIdChange?.(id);
+  }
+
+  function setAfterId(id: string | null) {
+    onAfterIdChange?.(id);
+  }
+
+  function setPickTarget(target: "before" | "after" | null) {
+    onPickTargetChange?.(target);
+  }
 
   function clearSide(side: "before" | "after") {
     if (side === "before") {
@@ -52,6 +79,7 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
     setPreviewBefore(null);
     setPreviewAfter(null);
     setError(null);
+    if (pickTarget === side) setPickTarget(null);
   }
 
   function clearAll() {
@@ -67,32 +95,22 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
     setError(null);
   }
 
+  function handleSlotTap(side: "before" | "after") {
+    setError(null);
+    setPreviewBefore(null);
+    setPreviewAfter(null);
+    setPickTarget(pickTarget === side ? null : side);
+  }
+
   async function handleUpload(target: "before" | "after", file: File) {
     setError(null);
     setPreviewBefore(null);
     setPreviewAfter(null);
+    setPickTarget(null);
     const item = await createMediaFromFile(file);
     onChange();
     if (target === "before") setBeforeId(item.id);
     else setAfterId(item.id);
-  }
-
-  function selectFromLibrary(id: string) {
-    if (!pickTarget) return;
-
-    const currentId = pickTarget === "before" ? beforeId : afterId;
-    if (currentId === id) {
-      clearSide(pickTarget);
-    } else if (pickTarget === "before") {
-      setBeforeId(id);
-    } else {
-      setAfterId(id);
-    }
-
-    setPreviewBefore(null);
-    setPreviewAfter(null);
-    setPickTarget(null);
-    setError(null);
   }
 
   async function buildPreview(): Promise<{ before: string; after: string } | null> {
@@ -167,7 +185,14 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
         </div>
         <button
           type="button"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => {
+            setOpen((v) => {
+              if (v) {
+                setPickTarget(null);
+              }
+              return !v;
+            });
+          }}
           className="shrink-0 rounded-lg border border-[rgb(var(--brand-200))] px-3 py-2 text-xs font-medium text-[rgb(var(--brand-800))]"
         >
           {open ? "Hide" : "Merge photos"}
@@ -176,6 +201,10 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
 
       {open ? (
         <div className="space-y-4 border-t border-[rgb(var(--brand-100))] px-4 pb-4 pt-4">
+          <p className="text-sm text-[rgb(var(--brand-600))]">
+            Tap the Before or After box, then scroll up to your media library and choose a photo.
+          </p>
+
           <div className="grid gap-4 sm:grid-cols-2">
             {(["before", "after"] as const).map((side) => {
               const selected = side === "before" ? beforeItem : afterItem;
@@ -184,10 +213,16 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
               const setEnhanceOn = side === "before" ? setEnhanceBefore : setEnhanceAfter;
               const prompt = side === "before" ? beforePrompt : afterPrompt;
               const setPrompt = side === "before" ? setBeforePrompt : setAfterPrompt;
+              const isPickTarget = pickTarget === side;
+
               return (
                 <div
                   key={side}
-                  className="rounded-xl border border-[rgb(var(--brand-100))] p-3"
+                  className={`rounded-xl border p-3 ${
+                    isPickTarget
+                      ? "border-[rgb(var(--brand-600))] bg-[rgb(var(--brand-50))] ring-2 ring-[rgb(var(--brand-200))]"
+                      : "border-[rgb(var(--brand-100))]"
+                  }`}
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="text-sm font-semibold capitalize text-[rgb(var(--brand-800))]">
@@ -203,35 +238,47 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
                       </button>
                     ) : null}
                   </div>
-                  <div className="mt-2 aspect-square overflow-hidden rounded-lg bg-[rgb(var(--brand-100))]">
-                    {selected ? (
-                      <img
-                        src={getMediaDisplayUrl(selected)}
-                        alt={`${side} selected`}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center px-3 text-center text-xs text-[rgb(var(--brand-500))]">
-                        No photo selected
-                      </div>
-                    )}
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      className={`rounded-lg border px-2 py-1 text-xs font-medium ${
-                        pickTarget === side
-                          ? "border-[rgb(var(--brand-600))] bg-[rgb(var(--brand-100))]"
-                          : "border-[rgb(var(--brand-200))]"
-                      }`}
-                      onClick={() =>
-                        setPickTarget((current) => (current === side ? null : side))
-                      }
-                    >
-                      {pickTarget === side ? "Cancel pick" : "From library"}
-                    </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSlotTap(side)}
+                    className="mt-2 block w-full overflow-hidden rounded-lg text-left"
+                    aria-pressed={isPickTarget}
+                    aria-label={
+                      selected
+                        ? `Change ${side} photo — tap then pick from library above`
+                        : `Select ${side} photo — tap then pick from library above`
+                    }
+                  >
+                    <div className="aspect-square overflow-hidden rounded-lg bg-[rgb(var(--brand-100))]">
+                      {selected ? (
+                        <img
+                          src={getMediaDisplayUrl(selected)}
+                          alt={`${side} selected`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex h-full flex-col items-center justify-center gap-1 px-3 text-center">
+                          <span className="text-xs font-medium text-[rgb(var(--brand-700))]">
+                            Tap to choose
+                          </span>
+                          <span className="text-[11px] text-[rgb(var(--brand-500))]">
+                            then pick from library above
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+
+                  {isPickTarget ? (
+                    <p className="mt-2 text-[11px] font-medium text-[rgb(var(--brand-700))]">
+                      Scroll up to the media library and tap a photo.
+                    </p>
+                  ) : null}
+
+                  <div className="mt-2">
                     <label className="cursor-pointer rounded-lg border border-[rgb(var(--brand-200))] px-2 py-1 text-xs font-medium">
-                      Upload
+                      Upload new
                       <input
                         type="file"
                         accept="image/*"
@@ -244,6 +291,7 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
                       />
                     </label>
                   </div>
+
                   {selected ? (
                     <>
                       <label className="mt-3 flex items-center gap-2 text-xs font-medium text-[rgb(var(--brand-800))]">
@@ -266,12 +314,8 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
                       ) : null}
                     </>
                   ) : null}
-                  {pickTarget === side ? (
-                    <p className="mt-2 text-[11px] text-[rgb(var(--brand-600))]">
-                      Tap a photo below to assign it. Tap the selected photo again to clear.
-                    </p>
-                  ) : null}
-                  {selectedId && pickTarget !== side ? (
+
+                  {selectedId && !isPickTarget ? (
                     <p className="mt-2 truncate text-[11px] text-[rgb(var(--brand-500))]">
                       Selected: {selected?.name}
                     </p>
@@ -280,57 +324,6 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
               );
             })}
           </div>
-
-          {pickTarget ? (
-            <div className="rounded-xl border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] p-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Pick {pickTarget} photo</p>
-                <button type="button" className="text-xs" onClick={() => setPickTarget(null)}>
-                  Done
-                </button>
-              </div>
-              {photos.length === 0 ? (
-                <p className="mt-2 text-xs text-[rgb(var(--brand-600))]">
-                  Upload photos to your library first.
-                </p>
-              ) : (
-                <ul className="mt-2 grid grid-cols-4 gap-2">
-                  {photos.map((p) => {
-                    const assigned =
-                      p.id === beforeId ? "before" : p.id === afterId ? "after" : null;
-                    const isPickTargetSelected =
-                      pickTarget === "before" ? beforeId === p.id : afterId === p.id;
-                    return (
-                      <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => selectFromLibrary(p.id)}
-                          className={`relative w-full overflow-hidden rounded ${
-                            isPickTargetSelected
-                              ? "ring-2 ring-[rgb(var(--brand-700))]"
-                              : assigned
-                                ? "ring-2 ring-[rgb(var(--brand-400))]"
-                                : ""
-                          }`}
-                        >
-                          <img
-                            src={getMediaDisplayUrl(p)}
-                            alt={p.name}
-                            className="aspect-square w-full object-cover"
-                          />
-                          {assigned ? (
-                            <span className="absolute bottom-0 left-0 right-0 bg-black/60 py-0.5 text-center text-[10px] font-medium capitalize text-white">
-                              {assigned}
-                            </span>
-                          ) : null}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </div>
-          ) : null}
 
           {previewBefore && previewAfter ? (
             <div>
@@ -361,7 +354,7 @@ export function BeforeAfterPanel({ items, onChange, onMerged }: BeforeAfterPanel
             >
               Save merge to library
             </button>
-            {hasSelection ? (
+            {hasSelection || pickTarget ? (
               <button
                 type="button"
                 disabled={busy}

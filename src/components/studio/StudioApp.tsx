@@ -17,6 +17,9 @@ export function StudioApp() {
   const [historyKey, setHistoryKey] = useState(0);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [loadingMedia, setLoadingMedia] = useState(true);
+  const [mergePickTarget, setMergePickTarget] = useState<"before" | "after" | null>(null);
+  const [mergeBeforeId, setMergeBeforeId] = useState<string | null>(null);
+  const [mergeAfterId, setMergeAfterId] = useState<string | null>(null);
 
   const refreshMedia = useCallback(async () => {
     setLoadingMedia(true);
@@ -116,15 +119,32 @@ export function StudioApp() {
         <MediaLibrary
           items={items}
           onChange={() => void refreshMedia()}
-          selectionMode
+          selectionMode={!mergePickTarget}
           selectedId={activeCreativeId}
           onSelect={selectCreative}
+          mergePickTarget={mergePickTarget}
+          mergeBeforeId={mergeBeforeId}
+          mergeAfterId={mergeAfterId}
+          onMergePick={(id) => {
+            if (mergePickTarget === "before") {
+              setMergeBeforeId((current) => (current === id ? null : id));
+            } else if (mergePickTarget === "after") {
+              setMergeAfterId((current) => (current === id ? null : id));
+            }
+            setMergePickTarget(null);
+          }}
         />
 
         <BeforeAfterPanel
           items={items}
           onChange={() => void refreshMedia()}
           onMerged={(item) => selectCreative(item.id)}
+          pickTarget={mergePickTarget}
+          onPickTargetChange={setMergePickTarget}
+          beforeId={mergeBeforeId}
+          afterId={mergeAfterId}
+          onBeforeIdChange={setMergeBeforeId}
+          onAfterIdChange={setMergeAfterId}
         />
 
         <PublishPanel
