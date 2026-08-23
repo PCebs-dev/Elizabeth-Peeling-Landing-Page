@@ -50,6 +50,59 @@ in [`src/config/links.ts`](src/config/links.ts).
 
 Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_GA_ID` for analytics.
 
+## Social Ads Studio
+
+Private tool at [`/studio`](/studio) for generating Instagram/Facebook creatives from treatment photos.
+
+1. Set `STUDIO_PASSWORD` in `.env.local` (required to sign in).
+2. Set `OPENAI_API_KEY` for AI-written ads and **Generate AI image**. Without a key, **Generate ad** still works with local template variations; AI images require a key.
+3. Optional: `OPENAI_IMAGE_MODEL` (default tries `gpt-image-2` → `1.5` → `1` → mini, then a free fallback).
+4. For **Generate AI video**, set `HIGGSFIELD_API_KEY_ID` + `HIGGSFIELD_API_KEY_SECRET` (Higgsfield image-to-video — strong for Reels-style dental clips). Without keys, the studio copies a motion prompt and opens Higgsfield so you can generate there and upload the MP4.
+5. Optional Meta publish (manual from studio for now):
+   - `META_PAGE_ID` — Facebook Page ID
+   - `META_PAGE_ACCESS_TOKEN` — long-lived Page token with `pages_manage_posts`, `pages_read_engagement`, `instagram_basic`, `instagram_content_publish`
+   - `META_IG_USER_ID` — Instagram Business Account ID linked to that Page
+   - `STUDIO_AUTO_PUBLISH_STORIES` — default **off**. Daily cron only saves ads for review. Set `true` later to auto-post Story rows.
+   - Optional `STUDIO_STORY_PLATFORMS=instagram,facebook`
+   - Video Reels: download from the media library and post manually (one-click publish is image-only for now)
+6. Open `/studio/login`, sign in, then either:
+   - **Generate AI image** — adds a treatment still to your library
+   - **Generate AI video** — animates a still with Higgsfield (uses the selected image when one is selected)
+   - Select any photo/video → **Generate ad from photo/video** — writes caption/hashtags from that media’s theme
+7. Re-click caption generation for a new variation. Review IG/FB previews, then **Copy caption**, **Share export pack**, or **Publish to social media**.
+
+### Daily automation (7am local)
+
+Runs on this PC via Windows Task Scheduler (`ElizabethStudio-CalendarDaily`) at **7:00 AM**. It does **not** need `next dev`, Vercel, or a published site.
+
+Each morning the job:
+
+1. Runs `npm run studio:calendar-daily` (`tools/run-calendar-local.ts`)
+2. Ensures upcoming themes (≥35 days) and generates that day’s image + bilingual caption
+3. Saves creatives under **Saved calendar ads** in `/studio` for review
+4. Does **not** auto-publish to Instagram/Facebook unless `STUDIO_AUTO_PUBLISH_STORIES=true`
+
+The PC must be on (and signed in) at 7:00 AM. Logs: `logs/calendar-daily.log`. Manual run: `npm run studio:calendar-daily`, or **Run today's calendar** in the studio.
+
+Vercel Cron in [`vercel.json`](vercel.json) (`0 11 * * *`) is unused until you publish.
+
+### iPhone / PWA (Add to Home Screen)
+
+The studio is a Progressive Web App. After you deploy over **HTTPS**:
+
+1. On iPhone, open Safari (not Chrome/Instagram in-app browsers).
+2. Go to `https://your-domain/studio` and sign in.
+3. Tap **Share** → **Add to Home Screen** → Add.
+4. Open **Peeling Studio** from the home screen (standalone, no Safari chrome).
+
+Includes: camera + photo library upload, AI generate, captions, share sheet export, Meta publish. Photos stay in that browser’s IndexedDB (Home Screen app has its own storage — use the same Home Screen icon consistently).
+
+The PWA uses Dr. Elizabeth Peeling branding (warm camel/greige + **EP** monogram), matching the landing page.
+
+Photos stay in the browser (IndexedDB). Library tiles show **Upload** or **AI**. Export packs disclose AI-generated creatives. The studio is password-gated and disallowed in `robots.txt`.
+
+To find IDs: Meta Business Suite → your Page / Instagram professional account settings, or Graph API Explorer (`me/accounts` and `/{page-id}?fields=instagram_business_account`).
+
 ## Deploy
 
 ```bash

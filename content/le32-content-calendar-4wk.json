@@ -1,0 +1,738 @@
+{
+  "meta": {
+    "practice": "LE 32 Clinique Dentaire",
+    "dentist": "Dr. Elizabeth Peeling",
+    "geo": "Vaudreuil-Dorion, West Island, greater Montreal",
+    "window": {
+      "start": "2026-08-10",
+      "end": "2026-09-04"
+    },
+    "audience": "Adults 30-55 working professionals; parents of teens for Invisalign; cosmetic and implant seekers",
+    "studio": {
+      "channelDefault": "organic",
+      "languageDefault": "both",
+      "usage": "Image-only calendar. Automation and studio generate AI stills + captions. No video/reels.",
+      "bilingual": {
+        "requiredWhen": "language is both (default)",
+        "rule": "English caption uses the English on-image creative; French caption uses the French on-image twin. Same photo/layout — only typography language changes. Always generate both EN and FR assets before marking the day complete."
+      },
+      "upcomingThemes": {
+        "minDaysAhead": 35,
+        "reviewUrl": "/studio/themes",
+        "csvUrl": "/api/studio/upcoming-themes?format=csv",
+        "rule": "When a date has no hand-authored calendar row, automation generates from the rolling upcoming themes schedule (engagement-optimized, split across service categories)."
+      },
+      "dailyCron": {
+        "scheduleUtc": "0 11 * * *",
+        "approxLocal": "7:00 America/Toronto (EDT); 6:00 during EST",
+        "path": "/api/studio/calendar/run",
+        "behavior": "Generate image + caption into Saved calendar ads for manual review. Auto-publish off unless STUDIO_AUTO_PUBLISH_STORIES=true."
+      }
+    },
+    "mixTarget": "80% tof/mof, 20% bof",
+    "imageOnly": true,
+    "formatsAllowed": [
+      "static",
+      "carousel",
+      "story"
+    ]
+  },
+  "posts": [
+    {
+      "id": "w1-mon-invisalign-myth",
+      "week": 1,
+      "date": "2026-08-10",
+      "day": "Mon",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "education",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "invisalign",
+      "channel": "organic",
+      "language": "both",
+      "angle": "myth-bust",
+      "hook": "Opening line on image text: \"Invisalign is only for teens.\" Cut to adult hand holding clear aligners. On-screen text: Myth. Bust it in 20 seconds.",
+      "notes": "IMAGE-ONLY static feed post (no video). Organic IG/FB static image. Hook: open with the myth \"Invisalign is only for teens,\" then correct gently - many adults in Vaudreuil and the West Island choose clear aligners for mild crowding or bite concerns because trays are discreet at work. Visual brief: (1) myth text card, (2) close-up of clear aligner in hand under soft clinic light, (3) hero still or B-roll of SmileView on phone, (4) soft CTA end card. Caption angle: myth-bust + local trust. Do not promise timelines or guaranteed straight teeth. CTA: try Invisalign SmileView or book a consult with Dr. Elizabeth Peeling at LE 32. Hashtags: treatment + VaudreuilDorion, WestIsland, Montreal area. Language: both EN and FR QC. Generate AI image from imageHints + subjectMode, then bilingual caption. Do not create video or Reels.",
+      "cta": "Try SmileView or book a consult at LE 32",
+      "imageHints": [
+        "hand holding clear aligners, soft clinic light, no identifiable patient face"
+      ],
+      "subjectMode": "service",
+      "production": "ai-image",
+      "compliance": [
+        "no-timeline-promises",
+        "no-guaranteed-results"
+      ]
+    },
+    {
+      "id": "w1-tue-gbp-consult",
+      "week": 1,
+      "date": "2026-08-11",
+      "day": "Tue",
+      "platforms": [
+        "google-business"
+      ],
+      "pillar": "conversion",
+      "format": "static",
+      "funnel": "bof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "soft-cta",
+      "hook": "GBP title angle: \"Curious about veneers, Invisalign, or implants? Start with a consult in Vaudreuil-Dorion.\"",
+      "notes": "IMAGE-ONLY static post. Google Business Profile post (publish manually in GBP). Soft conversion: invite new patients exploring cosmetic dentistry, Invisalign, or dental implants to book a consult with Dr. Elizabeth Peeling at LE 32 in Vaudreuil-Dorion. Keep copy short (2-3 sentences). Mention West Island convenience without hard sell. No discounts that imply guaranteed clinical outcomes. No financing rates. CTA: call or book online. Pair with a warm clinic exterior or reception still (AI or phone photo). Language: prefer EN primary with FR variant available.",
+      "cta": "Call or book a consult online",
+      "imageHints": [
+        "warm clinic exterior or reception, Vaudreuil daylight, no patients identifiable"
+      ],
+      "subjectMode": "service",
+      "production": "phone-photo-or-ai",
+      "compliance": [
+        "no-guaranteed-results",
+        "odq-review-before-publish"
+      ]
+    },
+    {
+      "id": "w1-tue-story-implant-faq",
+      "week": 1,
+      "date": "2026-08-11",
+      "day": "Tue",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "education",
+      "format": "story",
+      "funnel": "tof",
+      "categoryId": "implants",
+      "channel": "organic",
+      "language": "both",
+      "angle": "question-hook",
+      "hook": "Story frame 1 text: \"Missing a tooth?\" Frame 2: \"Implant vs bridge - which questions should you ask first?\" Poll: Implant curiosity / Just learning.",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories (3 frames). Question-hook education on dental implants vs bridge - do not recommend one option as always better; invite a consult for personalized assessment. Frame 1: relatable hook for adults 35-55. Frame 2: two fair questions patients ask (longevity, neighbouring teeth). Frame 3: poll sticker + CTA to DM \"IMPLANT\" or book. No outcome guarantees. Local: LE 32 Vaudreuil-Dorion. Generate short EN/FR sticker text via studio if needed.",
+      "cta": "DM IMPLANT or book a consult",
+      "imageHints": [
+        "simple diagram-style still of implant concept, clean clinical aesthetic, no graphic surgery"
+      ],
+      "subjectMode": "service",
+      "production": "ai-image",
+      "compliance": [
+        "no-guaranteed-results",
+        "no-timeline-promises"
+      ]
+    },
+    {
+      "id": "w1-wed-veneers-education",
+      "week": 1,
+      "date": "2026-08-12",
+      "day": "Wed",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "education",
+      "format": "carousel",
+      "funnel": "tof",
+      "categoryId": "veneers",
+      "channel": "organic",
+      "language": "both",
+      "angle": "question-hook",
+      "hook": "Slide 1 headline: \"Thinking about veneers? Start with these 4 questions.\" Not a sales pitch - a consult prep list.",
+      "notes": "IMAGE-ONLY carousel (still slides, no video). Organic carousel (5 slides). Hook: \"Thinking about veneers? Start with these 4 questions.\" Slides: (1) cover question-hook, (2) What bothers you most - colour, chips, gaps, or shape?, (3) Are you open to discussing enamel preparation?, (4) What does \"natural-looking\" mean to you in photos and meetings?, (5) Soft CTA - book a cosmetic consult at LE 32 with Dr. Peeling. Tone: educational, calm, professional. No \"Hollywood smile guaranteed.\" Local hashtags Vaudreuil / West Island. Image style: clean typography on soft clinic tones or AI lifestyle smile (non-identifiable). Language: both.",
+      "cta": "Book a cosmetic consult at LE 32",
+      "imageHints": [
+        "clean carousel cover, soft greige clinic tones, subtle smile detail without identifiable patient"
+      ],
+      "subjectMode": "people",
+      "production": "ai-or-design",
+      "compliance": [
+        "no-guaranteed-results",
+        "disclaimer-results-vary"
+      ]
+    },
+    {
+      "id": "w1-thu-story-bts-morning",
+      "week": 1,
+      "date": "2026-08-13",
+      "day": "Thu",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "bts",
+      "format": "story",
+      "funnel": "tof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "behind-the-scenes",
+      "hook": "Story series: \"Morning at LE 32\" - coffee in staff room, lights on in operatory, Dr. Peeling reviewing the day (no patient faces).",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories BTS (3-4 stills, phone only). Hook sticker: \"Morning at LE 32.\" Show real atmosphere: empty operatory setup, team greeting, calm lighting - never Photograph identifiable patients without consent. Caption stickers: warm, human, not corporate. End frame: \"Serving Vaudreuil-Dorion and nearby West Island.\" Soft CTA: follow for smile tips. No clinical claims.",
+      "cta": "Follow for smile tips from LE 32",
+      "imageHints": [
+        "empty modern operatory, soft morning light, no patients"
+      ],
+      "subjectMode": "service",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent"
+      ]
+    },
+    {
+      "id": "w1-fri-testimonial",
+      "week": 1,
+      "date": "2026-08-14",
+      "day": "Fri",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "social-proof",
+      "format": "static",
+      "funnel": "mof",
+      "categoryId": "invisalign",
+      "channel": "organic",
+      "language": "both",
+      "angle": "social-proof",
+      "hook": "Patient (consented) on image text: \"I waited years because I thought braces were the only option.\" Cut to: \"Clear aligners fit my work week.\"",
+      "notes": "IMAGE-ONLY static feed post (no video). Organic static image. from consented patient testimonial (written consent required before filming). Hook with the waiting-years line, then one concrete lifestyle benefit (discreet at work / meetings) without inventing clinical outcomes or timelines. If no patient available this week, use staff-photographed paraphrase only with on-screen \"Composite of themes patients share\" and do not fake a named review. End card: Dr. Elizabeth Peeling, LE 32, Vaudreuil-Dorion. CTA: book a consult or try SmileView. Studio: generate bilingual caption from this brief; do not invent star counts. Hashtags local + Invisalign. Generate AI image from imageHints + subjectMode, then bilingual caption. Do not create video or Reels.",
+      "cta": "Book a consult or try SmileView",
+      "imageHints": [
+        "adult professional smiling naturally outdoors, West Island light, not a stock \"perfect\" grin"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent",
+        "no-invented-reviews",
+        "no-timeline-promises",
+        "disclaimer-results-vary",
+        "odq-review-before-publish"
+      ]
+    },
+    {
+      "id": "w2-mon-confidence-zoom",
+      "week": 2,
+      "date": "2026-08-17",
+      "day": "Mon",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "transformations",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "confidence",
+      "hook": "POV hook on-screen: \"You angle the laptop camera so your smile stays out of frame.\" Caption lead: \"Mild crowding and chips are more common than you think - here's what patients ask us first.\"",
+      "notes": "IMAGE-ONLY static feed post (no video). Organic static image., confidence angle for working professionals 30-55. Hook is the Zoom/laptop camera hide. Keep clinical part light: common concerns (mild crowding, chips, colour) and that a consult explores options (whitening, aligners, veneers) without prescribing on social. No before/after needed. Soft emotional close: smiling freely in meetings and photos. Local: LE 32 Vaudreuil-Dorion. CTA: book a smile consult. Disclaimer: results vary; no guarantees. Language: both. Generate AI image from imageHints + subjectMode, then bilingual caption. Do not create video or Reels.",
+      "cta": "Book a smile consult at LE 32",
+      "imageHints": [
+        "professional adult in soft natural light, subtle closed-mouth smile, cafe or home office vibe"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "no-guaranteed-results",
+        "disclaimer-results-vary"
+      ]
+    },
+    {
+      "id": "w2-tue-gbp-whitening",
+      "week": 2,
+      "date": "2026-08-18",
+      "day": "Tue",
+      "platforms": [
+        "google-business"
+      ],
+      "pillar": "education",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "whitening",
+      "channel": "organic",
+      "language": "en",
+      "angle": "myth-bust",
+      "hook": "GBP: \"Drugstore strips vs professional whitening - what actually belongs in a consult conversation.\"",
+      "notes": "IMAGE-ONLY static post. GBP education post. Myth-bust gently: over-the-counter strips are not the same as a professional whitening plan assessed for sensitivity and gum health. Do not bash brands; do not promise shade numbers. Invite readers in Vaudreuil-Dorion / West Island to ask about whitening at a consult with Dr. Peeling at LE 32. Short copy. Pair with AI or phone still of whitening trays (no patient face). CTA: learn more / book.",
+      "cta": "Ask about whitening at your consult",
+      "imageHints": [
+        "professional whitening trays on linen, clean bright still, no faces"
+      ],
+      "subjectMode": "service",
+      "production": "phone-photo-or-ai",
+      "compliance": [
+        "no-guaranteed-results"
+      ]
+    },
+    {
+      "id": "w2-tue-story-teen-invisalign-poll",
+      "week": 2,
+      "date": "2026-08-18",
+      "day": "Tue",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "education",
+      "format": "story",
+      "funnel": "tof",
+      "categoryId": "invisalign",
+      "channel": "organic",
+      "language": "both",
+      "angle": "question-hook",
+      "hook": "Parent-targeted Story: \"Teen asking about braces this year?\" Poll: Clear aligners / Metal braces / Not sure yet.",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories for parents of teens. Hook question about back-to-school / teen smile confidence. Poll sticker drives engagement. Follow-up frame: clear aligners can be an option for some teens - only a consult determines fit; no timeline promises. CTA: book a family-friendly Invisalign consult at LE 32. Keep tone supportive, not salesy. Bilingual sticker text if possible.",
+      "cta": "Book an Invisalign consult for your teen",
+      "imageHints": [
+        "clear aligners flat-lay, youthful but not childish props, soft daylight"
+      ],
+      "subjectMode": "service",
+      "production": "ai-image",
+      "compliance": [
+        "no-timeline-promises",
+        "no-guaranteed-results"
+      ]
+    },
+    {
+      "id": "w2-wed-local-trust",
+      "week": 2,
+      "date": "2026-08-19",
+      "day": "Wed",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "local",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "local-trust",
+      "hook": "Caption hook: \"You shouldn't need to cross the bridge for thoughtful cosmetic care.\" Photo: LE 32 exterior or Vaudreuil streetscape with clinic context.",
+      "notes": "IMAGE-ONLY static post. Organic static (or soft carousel of 2). Local-trust angle: Dr. Elizabeth Peeling at LE 32 serves Vaudreuil-Dorion and nearby West Island patients seeking Invisalign, veneers, whitening, and implants without a downtown trek. Geotag clinic. Do not invent awards or review scores. Warm, neighbourly voice. CTA: save this post / book when ready. Language: both. Good candidate for AI image of clinic-area atmosphere if exterior photo unavailable.",
+      "cta": "Save this post or book when you're ready",
+      "imageHints": [
+        "clinic exterior or Vaudreuil-Dorion streetscape in warm daylight, inviting not touristy"
+      ],
+      "subjectMode": "service",
+      "production": "phone-photo-or-ai",
+      "compliance": [
+        "no-invented-reviews"
+      ]
+    },
+    {
+      "id": "w2-thu-story-whitening-faq",
+      "week": 2,
+      "date": "2026-08-20",
+      "day": "Thu",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "education",
+      "format": "story",
+      "funnel": "tof",
+      "categoryId": "whitening",
+      "channel": "organic",
+      "language": "both",
+      "angle": "myth-bust",
+      "hook": "Story text: \"Myth: whitening ruins enamel.\" Next frame: \"Truth: unsupervised products and overuse are the real risk - ask us what fits your teeth.\"",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories myth-bust on whitening/enamel. Keep accurate and cautious: do not claim all professional whitening is risk-free; emphasize assessment for sensitivity. CTA: reply WHITEN for a DM with booking link. No shade-number promises.",
+      "cta": "Reply WHITEN for booking info",
+      "imageHints": [
+        "close-up of healthy smile mid-laugh, non-identifiable crop, bright natural light"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "no-guaranteed-results"
+      ]
+    },
+    {
+      "id": "w2-fri-implants-financing",
+      "week": 2,
+      "date": "2026-08-21",
+      "day": "Fri",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "conversion",
+      "format": "carousel",
+      "funnel": "bof",
+      "categoryId": "implants",
+      "channel": "organic",
+      "language": "both",
+      "angle": "financing-friendly",
+      "hook": "Slide 1: \"Replacing a missing tooth feels like a big decision - the consult should not.\" Slide 2: \"What we walk through together.\" Slide 3: \"Beautifi financing may be available - ask the team (no rates in this post).\"",
+      "notes": "IMAGE-ONLY carousel (still slides, no video). Organic carousel soft conversion for dental implants. Empathy first for adults considering implants. Outline consult topics: health history, options, timeline discussion as individualized (no fixed months), and that Beautifi financing may be available - NEVER state rates, monthly payments, or approval likelihood. CTA: book an implant consult at LE 32, Vaudreuil-Dorion. Include short disclaimer that treatment plans vary. Language: both. Studio angle: financing-friendly + soft-cta.",
+      "cta": "Book an implant consult at LE 32",
+      "imageHints": [
+        "calm consult desk scene, brochure and tablet, no surgical imagery"
+      ],
+      "subjectMode": "service",
+      "production": "ai-or-design",
+      "compliance": [
+        "financing-no-rates",
+        "no-timeline-promises",
+        "no-guaranteed-results",
+        "disclaimer-results-vary",
+        "odq-review-before-publish"
+      ]
+    },
+    {
+      "id": "w3-mon-before-after",
+      "week": 3,
+      "date": "2026-08-24",
+      "day": "Mon",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "transformations",
+      "format": "carousel",
+      "funnel": "mof",
+      "categoryId": "veneers",
+      "channel": "organic",
+      "language": "both",
+      "angle": "transformation",
+      "hook": "Slide 1: \"Before / after - same person, consented share.\" Slide 2: close natural lighting comparison. Caption open: \"She wanted her smile to match how confident she already felt at work.\"",
+      "notes": "IMAGE-ONLY carousel (still slides, no video). Organic before/after carousel. ONLY publish with written patient consent on file. Prefer veneers or smile-makeover case; if veneers case unavailable, swap categoryId to matching treatment (invisalign/whitening) but keep transformation angle. Caption: emotional benefit + process curiosity; NEVER claim typical results, shade numbers, or timelines. On-image or studio disclaimer: results vary; individual assessment required. Geotag LE 32. CTA: ask about a cosmetic consult. Language: both. ODQ review before publish.",
+      "cta": "Ask about a cosmetic consult",
+      "imageHints": [
+        "side-by-side smile crop, consistent lighting, consented patient photos only - do not AI-fake a real B&A"
+      ],
+      "subjectMode": "people",
+      "production": "ai-or-design",
+      "compliance": [
+        "patient-consent",
+        "disclaimer-results-vary",
+        "no-guaranteed-results",
+        "no-timeline-promises",
+        "odq-review-before-publish"
+      ]
+    },
+    {
+      "id": "w3-tue-gbp-reviews",
+      "week": 3,
+      "date": "2026-08-25",
+      "day": "Tue",
+      "platforms": [
+        "google-business"
+      ],
+      "pillar": "social-proof",
+      "format": "static",
+      "funnel": "mof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "social-proof",
+      "hook": "GBP: \"If your visit at LE 32 went well, a Google review helps neighbours in Vaudreuil-Dorion find thoughtful dental care.\"",
+      "notes": "IMAGE-ONLY static post. GBP review-ask post. Thank patients generally without inventing quotes or star counts. Invite honest Google reviews. Soft line: new patients exploring Invisalign, cosmetic dentistry, or implants can book a consult with Dr. Peeling. CTA: leave a review / book. Pair with friendly team or clinic photo (consented staff OK).",
+      "cta": "Leave a Google review or book a consult",
+      "imageHints": [
+        "team or reception welcome moment, consented staff only, bright and calm"
+      ],
+      "subjectMode": "people",
+      "production": "phone-photo",
+      "compliance": [
+        "no-invented-reviews",
+        "patient-consent"
+      ]
+    },
+    {
+      "id": "w3-tue-story-ba-swipe",
+      "week": 3,
+      "date": "2026-08-25",
+      "day": "Tue",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "transformations",
+      "format": "story",
+      "funnel": "mof",
+      "categoryId": "veneers",
+      "channel": "organic",
+      "language": "both",
+      "angle": "transformation",
+      "hook": "Story: \"Swipe up... wait, swipe forward for after.\" Before frame → After frame → \"Results vary. Consent on file. Questions? DM us.\"",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories cutdown of Monday B&A. Same consent rules. Add poll: \"Would you want to see more smile journeys?\" Yes/Not yet. Disclaimer sticker: results vary. CTA: DM or book cosmetic consult. Do not add timeline text overlays.",
+      "cta": "DM us or book a cosmetic consult",
+      "imageHints": [
+        "consented before and after stills only"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent",
+        "disclaimer-results-vary",
+        "no-timeline-promises",
+        "no-guaranteed-results"
+      ]
+    },
+    {
+      "id": "w3-wed-first-invisalign-visit",
+      "week": 3,
+      "date": "2026-08-26",
+      "day": "Wed",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "education",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "invisalign",
+      "channel": "organic",
+      "language": "both",
+      "angle": "behind-the-scenes",
+      "hook": "On-screen: \"What actually happens at a first Invisalign visit.\" Beat 1: welcome. Beat 2: photos/scan vibe (no graphic close-ups of distress). Beat 3: \"Then we talk options - no pressure.\"",
+      "notes": "IMAGE-ONLY static feed post (no video). Organic static image. walkthrough of a first Invisalign visit at LE 32. photograph empty chair + staff hands + tablet SmileView moment; avoid identifiable patients unless consented. Educational BTS tone. Do not promise case acceptance or treatment length. CTA: book a first visit or try SmileView online. Local geotag. Language: both. Strong repurposing master for Stories + GBP later. Generate AI image from imageHints + subjectMode, then bilingual caption. Do not create video or Reels.",
+      "cta": "Book a first visit or try SmileView",
+      "imageHints": [
+        "modern operatory, scanner or tablet in hand, calm lighting, no distressed patient"
+      ],
+      "subjectMode": "service",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent",
+        "no-timeline-promises",
+        "no-guaranteed-results"
+      ]
+    },
+    {
+      "id": "w3-thu-story-community",
+      "week": 3,
+      "date": "2026-08-27",
+      "day": "Thu",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "local",
+      "format": "story",
+      "funnel": "tof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "local-trust",
+      "hook": "Story shoutout template: \"Local love - tagging [partner only if agreed].\" Fallback if no partner: \"Weekend in Vaudreuil - tag us in your smile photos (we'll ask before resharing).\"",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories local/community. Only tag a real partner (bridal, gym, wellness, youth sports) after agreement. Otherwise use UGC prompt: neighbours can tag LE 32; clinic will request consent before reshare. No clinical claims in partner content. CTA: tag @dr.elizabeth.peeling / clinic handle. Keep it human.",
+      "cta": "Tag us in your local smile photos",
+      "imageHints": [
+        "Vaudreuil downtown or park atmosphere, golden hour, lifestyle not clinical"
+      ],
+      "subjectMode": "random",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent",
+        "no-invented-reviews"
+      ]
+    },
+    {
+      "id": "w3-fri-smileview-cta",
+      "week": 3,
+      "date": "2026-08-28",
+      "day": "Fri",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "conversion",
+      "format": "static",
+      "funnel": "bof",
+      "categoryId": "invisalign",
+      "channel": "organic",
+      "language": "both",
+      "angle": "soft-cta",
+      "hook": "Headline: \"Curious how aligners could look on your smile?\" Sub: \"Start with SmileView - then talk it through with Dr. Peeling.\"",
+      "notes": "IMAGE-ONLY static post. Organic static soft CTA for Invisalign SmileView. Position simulation as a conversation starter, not a diagnosis or guaranteed preview of final results. CTA: try SmileView link + book consult at LE 32 Vaudreuil-Dorion. No timeline promises. Language: both. Studio: soft-cta angle. Pair with AI hand-holding-phone SmileView aesthetic or real phone screenshot without patient PHI.",
+      "cta": "Try SmileView, then book a consult",
+      "imageHints": [
+        "hands holding phone with smile simulation vibe, soft neutral background, no readable PHI"
+      ],
+      "subjectMode": "service",
+      "production": "phone-photo-or-ai",
+      "compliance": [
+        "no-guaranteed-results",
+        "no-timeline-promises",
+        "disclaimer-results-vary"
+      ]
+    },
+    {
+      "id": "w4-mon-seasonal-photos",
+      "week": 4,
+      "date": "2026-08-31",
+      "day": "Mon",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "transformations",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "whitening",
+      "channel": "organic",
+      "language": "both",
+      "angle": "seasonal",
+      "hook": "Hook: \"Late-summer photos hit different when you're not editing your smile out.\" Quick cuts: patio, lake-adjacent West Island light, natural laugh.",
+      "notes": "IMAGE-ONLY static feed post (no video). Organic static image. seasonal (late summer / back-to-routine). Whitening or general smile confidence - keep optional path open (whitening consult, or broader smile consult). No \"whiter in 1 hour\" claims. Local lifestyle imagery energy for Vaudreuil / West Island. CTA: book a whitening consult or smile assessment at LE 32. Language: both. Disclaimer: results vary. Generate AI image from imageHints + subjectMode, then bilingual caption. Do not create video or Reels.",
+      "cta": "Book a whitening consult or smile assessment",
+      "imageHints": [
+        "late-summer outdoor lifestyle, natural laugh, West Island light, non-identifiable or consented"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "no-guaranteed-results",
+        "disclaimer-results-vary"
+      ]
+    },
+    {
+      "id": "w4-tue-gbp-implants",
+      "week": 4,
+      "date": "2026-09-01",
+      "day": "Tue",
+      "platforms": [
+        "google-business"
+      ],
+      "pillar": "education",
+      "format": "static",
+      "funnel": "tof",
+      "categoryId": "implants",
+      "channel": "organic",
+      "language": "both",
+      "angle": "myth-bust",
+      "hook": "GBP: \"Myth: implants are only for seniors.\" Truth angle: adults of many ages explore implants after injury, decay, or long-time missing teeth - a consult decides fit.",
+      "notes": "IMAGE-ONLY static post. GBP myth-bust on dental implants age myth. Inclusive of working-age adults. No fear marketing. Invite consult with Dr. Elizabeth Peeling at LE 32 in Vaudreuil-Dorion. CTA: call or book. Short bilingual-capable copy. No surgical gore imagery.",
+      "cta": "Call or book an implant consult",
+      "imageHints": [
+        "clean educational still, implant model on neutral surface, professional not graphic"
+      ],
+      "subjectMode": "service",
+      "production": "phone-photo-or-ai",
+      "compliance": [
+        "no-guaranteed-results",
+        "no-timeline-promises"
+      ]
+    },
+    {
+      "id": "w4-tue-story-team",
+      "week": 4,
+      "date": "2026-09-01",
+      "day": "Tue",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "bts",
+      "format": "story",
+      "funnel": "tof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "behind-the-scenes",
+      "hook": "\"Meet the faces behind your visit\" - quick intros of willing staff (first name + role). Final frame: Dr. Peeling.",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories team culture. Only staff who agree to appear. Keep light: name, role, one fun fact (coffee order / favourite Vaudreuil lunch spot). No patient PHI in background. CTA: \"Book with a team that remembers you.\" Human trust builder.",
+      "cta": "Book with the LE 32 team",
+      "imageHints": [
+        "staff portraits in clinic, natural smiles, consented team only"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent"
+      ]
+    },
+    {
+      "id": "w4-wed-implant-vs-bridge",
+      "week": 4,
+      "date": "2026-09-02",
+      "day": "Wed",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "education",
+      "format": "carousel",
+      "funnel": "tof",
+      "categoryId": "implants",
+      "channel": "organic",
+      "language": "both",
+      "angle": "myth-bust",
+      "hook": "Slide 1: \"Implant vs bridge - not a TikTok verdict.\" Slide 2: \"What we compare in a consult.\" Slide 3: \"Neighbouring teeth.\" Slide 4: \"Bone and gum health.\" Slide 5: \"Your goals and timeline (individual).\"",
+      "notes": "IMAGE-ONLY carousel (still slides, no video). Organic education carousel. Balanced implant vs bridge comparison without crowning one winner. Emphasize personalized assessment at LE 32. No fear tactics, no guaranteed longevity numbers unless dentist approves specific compliant wording. CTA: book a consult to compare options. Language: both. Good AI-assisted typography carousel.",
+      "cta": "Book a consult to compare options",
+      "imageHints": [
+        "clean educational carousel covers, soft clinical palette, no gore"
+      ],
+      "subjectMode": "service",
+      "production": "ai-or-design",
+      "compliance": [
+        "no-guaranteed-results",
+        "no-timeline-promises",
+        "odq-review-before-publish"
+      ]
+    },
+    {
+      "id": "w4-thu-story-testimonial-cut",
+      "week": 4,
+      "date": "2026-09-03",
+      "day": "Thu",
+      "platforms": [
+        "instagram"
+      ],
+      "pillar": "social-proof",
+      "format": "story",
+      "funnel": "mof",
+      "categoryId": "invisalign",
+      "channel": "organic",
+      "language": "both",
+      "angle": "social-proof",
+      "hook": "3-frame cutdown of Week 1 testimonial: best soundbite → \"Why I booked\" → poll \"Thinking about aligners?\"",
+      "notes": "IMAGE-ONLY Instagram Story still(s) - static frames, no video clips. IMAGE-ONLY Instagram Story still(s) - static frames, no video stills. IG Stories repurpose of consented testimonial Reel. Same consent file. Poll sticker for engagement. CTA: link sticker to booking or SmileView. No new clinical claims in stickers.",
+      "cta": "Tap to book or try SmileView",
+      "imageHints": [
+        "frames from consented testimonial reel"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "patient-consent",
+        "no-invented-reviews",
+        "disclaimer-results-vary"
+      ]
+    },
+    {
+      "id": "w4-fri-consult-cta",
+      "week": 4,
+      "date": "2026-09-04",
+      "day": "Fri",
+      "platforms": [
+        "instagram",
+        "facebook"
+      ],
+      "pillar": "conversion",
+      "format": "static",
+      "funnel": "bof",
+      "categoryId": "smile-makeover",
+      "channel": "organic",
+      "language": "both",
+      "angle": "soft-cta",
+      "hook": "Talking-head or text-hook: \"If you've been screenshotting smile ideas for months - this is your sign to ask real questions in a consult.\" Not a limited-time medical sale.",
+      "notes": "IMAGE-ONLY static feed post (no video). Organic static image. soft conversion closing the 4-week cycle. Invite a comprehensive smile consult covering Invisalign, veneers/whitening, or implants as relevant - without bundling fake urgency or \"limited spots\" clinical pressure. Mention LE 32, Dr. Elizabeth Peeling, Vaudreuil-Dorion / West Island. Optional: Beautifi may be available (no rates). CTA: book online or call. Language: both. Keep warm and human per studio voice (no emojis, no em dashes). ODQ review before publish. Generate AI image from imageHints + subjectMode, then bilingual caption. Do not create video or Reels.",
+      "cta": "Book online or call LE 32",
+      "imageHints": [
+        "Dr. Peeling or clinic hero still if consented, otherwise warm reception + soft smile lifestyle"
+      ],
+      "subjectMode": "people",
+      "production": "ai-image",
+      "compliance": [
+        "financing-no-rates",
+        "no-guaranteed-results",
+        "no-timeline-promises",
+        "odq-review-before-publish"
+      ]
+    }
+  ]
+}

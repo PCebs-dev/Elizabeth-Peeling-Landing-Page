@@ -1,0 +1,5 @@
+# Keep deploys lean — local studio media / tools stay on the PC
+data/studio/saved-ads
+logs
+tools/invisalign-market-intel
+.next

@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "studio:calendar-daily": "tsx tools/run-calendar-local.ts",
+    "studio:calendar-daily-http": "node tools/studio-calendar-daily.mjs",
+    "studio:regen-calendar-csv": "node tools/regen-calendar-csv.mjs"
   },
   "dependencies": {
     "next": "^15.1.0",
@@ -22,6 +25,7 @@
     "eslint-config-next": "^15.1.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
+    "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
 }

@@ -22,6 +22,9 @@
 .DS_Store
 *.pem
 
+# local calendar automation logs
+/logs/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
@@ -31,6 +34,12 @@ yarn-error.log*
 # env files
 .env*.local
 .env
+
+# studio calendar automation output (JSON ads with embedded images)
+/data/studio/saved-ads/*.json
+!/data/studio/saved-ads/.gitkeep
+/data/studio/upcoming-themes.json
+/data/studio/calendar-history.json
 
 # typescript
 *.tsbuildinfo
@@ -43,4 +52,10 @@ next-env.d.ts
 /birdeye-*.html
 /birdeye-*.json
 /mappca.html
-/data/
+
+# market intel tool
+/tools/invisalign-market-intel/node_modules/
+/tools/invisalign-market-intel/dist/
+/tools/invisalign-market-intel/output/
+/tools/invisalign-market-intel/.env
+/tools/invisalign-market-intel/.env.local
