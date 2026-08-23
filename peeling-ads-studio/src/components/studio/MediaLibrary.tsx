@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import type { MediaItem } from "@/lib/studio/media-store";
 import {
   createMediaFromFile,
@@ -17,10 +17,6 @@ interface MediaLibraryProps {
   selectedId?: string | null;
   onSelect?: (id: string | null) => void;
   selectionMode?: boolean;
-  mergePickTarget?: "before" | "after" | null;
-  mergeBeforeId?: string | null;
-  mergeAfterId?: string | null;
-  onMergePick?: (id: string) => void;
 }
 
 export function MediaLibrary({
@@ -29,23 +25,12 @@ export function MediaLibrary({
   selectedId = null,
   onSelect,
   selectionMode = false,
-  mergePickTarget = null,
-  mergeBeforeId = null,
-  mergeAfterId = null,
-  onMergePick,
 }: MediaLibraryProps) {
-  const sectionRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [prompts, setPrompts] = useState<Record<string, string>>({});
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (mergePickTarget) {
-      sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [mergePickTarget]);
 
   async function handleUpload(files: FileList | null) {
     if (!files?.length) return;
@@ -96,28 +81,17 @@ export function MediaLibrary({
   }
 
   function handlePhotoClick(item: MediaItem) {
-    if (mergePickTarget && onMergePick) {
-      onMergePick(item.id);
-      return;
-    }
     if (selectionMode && onSelect) {
       onSelect(selectedId === item.id ? null : item.id);
     }
   }
 
   return (
-    <section
-      ref={sectionRef}
-      className={`rounded-2xl border bg-white p-4 shadow-sm ${
-        mergePickTarget
-          ? "border-[rgb(var(--brand-600))] ring-2 ring-[rgb(var(--brand-200))]"
-          : "border-[rgb(var(--brand-200))]"
-      }`}
-    >
+    <section className="rounded-2xl border border-[rgb(var(--brand-200))] bg-white p-4 shadow-sm">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-serif text-lg text-[rgb(var(--brand-900))]">Media library</h2>
         <div className="flex gap-2">
-          {selectionMode && selectedId && !mergePickTarget ? (
+          {selectionMode && selectedId ? (
             <button
               type="button"
               onClick={() => onSelect?.(null)}
@@ -145,12 +119,7 @@ export function MediaLibrary({
         />
       </div>
 
-      {mergePickTarget ? (
-        <p className="mt-3 rounded-lg bg-[rgb(var(--brand-100))] px-3 py-2 text-sm font-medium text-[rgb(var(--brand-900))]">
-          Tap a photo below for{" "}
-          <span className="capitalize">{mergePickTarget}</span>.
-        </p>
-      ) : selectionMode ? (
+      {selectionMode ? (
         <p className="mt-3 text-xs text-[rgb(var(--brand-600))]">
           Tap a photo to use it for publishing. Tap again to deselect.
         </p>
@@ -171,15 +140,13 @@ export function MediaLibrary({
           {items.map((item) => {
             const selectedForPublish = selectedId === item.id;
             const expanded = expandedId === item.id;
-            const mergeRole =
-              item.id === mergeBeforeId ? "before" : item.id === mergeAfterId ? "after" : null;
             return (
-              <li key={item.id} className="rounded-xl border border-[rgb(var(--brand-100))] overflow-hidden">
+              <li key={item.id} className="overflow-hidden rounded-xl border border-[rgb(var(--brand-100))]">
                 <button
                   type="button"
                   className={`relative block w-full ${selectionMode ? "ring-offset-2" : ""} ${
                     selectedForPublish ? "ring-2 ring-[rgb(var(--brand-600))]" : ""
-                  } ${mergeRole ? "ring-2 ring-[rgb(var(--brand-400))]" : ""}`}
+                  }`}
                   onClick={() => handlePhotoClick(item)}
                 >
                   <img
@@ -187,14 +154,9 @@ export function MediaLibrary({
                     alt={item.name}
                     className="aspect-square w-full object-cover"
                   />
-                  {selectedForPublish && !mergePickTarget ? (
+                  {selectedForPublish ? (
                     <span className="absolute left-1 top-1 rounded bg-[rgb(var(--brand-800))] px-1.5 py-0.5 text-[10px] font-medium text-white">
                       For publish
-                    </span>
-                  ) : null}
-                  {mergeRole ? (
-                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-medium capitalize text-white">
-                      {mergeRole}
                     </span>
                   ) : null}
                   {item.enhancementPrompt ? (

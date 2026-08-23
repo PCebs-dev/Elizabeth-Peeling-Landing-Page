@@ -128,7 +128,7 @@ export function PublishPanel({ imageDataUrl, onPublished, onStartAgain }: Publis
     <section className="rounded-2xl border border-[rgb(var(--brand-200))] bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="font-serif text-lg text-[rgb(var(--brand-900))]">Review</h2>
+          <h2 className="font-serif text-lg text-[rgb(var(--brand-900))]">Publish</h2>
           <p className="mt-1 text-xs text-[rgb(var(--brand-600))]">
             {format === "story" ? "Story" : "Post"} · {language.toUpperCase()}
             {tags.length > 0 ? ` · ${tags.slice(0, 2).join(" · ")}` : ""}
