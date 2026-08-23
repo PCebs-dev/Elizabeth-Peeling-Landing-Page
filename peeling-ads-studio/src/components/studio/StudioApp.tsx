@@ -17,9 +17,6 @@ export function StudioApp() {
   const [historyKey, setHistoryKey] = useState(0);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [loadingMedia, setLoadingMedia] = useState(true);
-  const [mergePickTarget, setMergePickTarget] = useState<"before" | "after" | null>(null);
-  const [mergeBeforeId, setMergeBeforeId] = useState<string | null>(null);
-  const [mergeAfterId, setMergeAfterId] = useState<string | null>(null);
   const [adSession, setAdSession] = useState(0);
 
   const refreshMedia = useCallback(async () => {
@@ -29,7 +26,8 @@ export function StudioApp() {
       const next = await listMedia();
       setItems(next);
       setActiveCreativeId((current) => {
-        if (current && !next.some((item) => item.id === current)) return null;
+        if (current && !next.some((item) => item.id === current)) return next[0]?.id ?? null;
+        if (!current && next[0]) return next[0].id;
         return current;
       });
     } catch (e) {
@@ -52,16 +50,9 @@ export function StudioApp() {
     setActiveCreativeOverride(null);
   }
 
-  function clearCreative() {
-    setActiveCreativeId(null);
-    setActiveCreativeOverride(null);
-  }
-
   function startAgain() {
-    clearCreative();
-    setMergeBeforeId(null);
-    setMergeAfterId(null);
-    setMergePickTarget(null);
+    setActiveCreativeId(items[0]?.id ?? null);
+    setActiveCreativeOverride(null);
     setAdSession((session) => session + 1);
   }
 
@@ -98,22 +89,11 @@ export function StudioApp() {
             alt="Selected creative"
             className="max-h-80 w-full object-cover"
           />
-          <div className="flex items-center justify-between gap-2 px-3 py-2">
-            <p className="text-xs text-[rgb(var(--brand-600))]">Active creative for publishing</p>
-            <button
-              type="button"
-              onClick={clearCreative}
-              className="text-xs font-medium text-[rgb(var(--brand-700))] underline"
-            >
-              Clear
-            </button>
-          </div>
+          <p className="px-3 py-2 text-xs text-[rgb(var(--brand-600))]">
+            Active creative for publishing — tap a library photo to change.
+          </p>
         </div>
-      ) : (
-        <p className="mb-6 rounded-xl border border-dashed border-[rgb(var(--brand-200))] bg-white px-4 py-3 text-sm text-[rgb(var(--brand-600))]">
-          Select a photo from your library when you are ready to publish.
-        </p>
-      )}
+      ) : null}
 
       <div className="space-y-6">
         {mediaError ? (
@@ -128,32 +108,15 @@ export function StudioApp() {
         <MediaLibrary
           items={items}
           onChange={() => void refreshMedia()}
-          selectionMode={!mergePickTarget}
+          selectionMode
           selectedId={activeCreativeId}
           onSelect={selectCreative}
-          mergePickTarget={mergePickTarget}
-          mergeBeforeId={mergeBeforeId}
-          mergeAfterId={mergeAfterId}
-          onMergePick={(id) => {
-            if (mergePickTarget === "before") {
-              setMergeBeforeId((current) => (current === id ? null : id));
-            } else if (mergePickTarget === "after") {
-              setMergeAfterId((current) => (current === id ? null : id));
-            }
-            setMergePickTarget(null);
-          }}
         />
 
         <BeforeAfterPanel
           items={items}
           onChange={() => void refreshMedia()}
           onMerged={(item) => selectCreative(item.id)}
-          pickTarget={mergePickTarget}
-          onPickTargetChange={setMergePickTarget}
-          beforeId={mergeBeforeId}
-          afterId={mergeAfterId}
-          onBeforeIdChange={setMergeBeforeId}
-          onAfterIdChange={setMergeAfterId}
         />
 
         <PublishPanel
@@ -166,7 +129,11 @@ export function StudioApp() {
         <HistoryPanel
           refreshKey={historyKey}
           onSelect={(item) => {
-            const match = items.find((i) => i.dataUrl === item.imageDataUrl || getMediaDisplayUrl(i) === item.imageDataUrl);
+            const match = items.find(
+              (i) =>
+                i.dataUrl === item.imageDataUrl ||
+                getMediaDisplayUrl(i) === item.imageDataUrl,
+            );
             if (match) selectCreative(match.id);
             else {
               setActiveCreativeId(null);
