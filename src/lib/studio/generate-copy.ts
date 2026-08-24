@@ -4,6 +4,7 @@ import {
   buildUserPrompt,
   pickRandomAngle,
 } from "./prompt";
+import { applyOdqCompliance } from "./odq-compliance";
 import { sanitizeAdCopy } from "./sanitize-copy";
 import { STUDIO_CLINIC } from "./targeting";
 import type { GenerateRequest, GeneratedAdCopy } from "./types";
@@ -25,7 +26,7 @@ async function callOpenAICopy(
     },
     body: JSON.stringify({
       model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      temperature: 1.05,
+      temperature: 0.9,
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: system },
@@ -50,7 +51,7 @@ async function callOpenAICopy(
     throw new Error("Incomplete ad JSON from model");
   }
   if (!Array.isArray(parsed.hashtags)) parsed.hashtags = [];
-  return sanitizeAdCopy(parsed);
+  return applyOdqCompliance(sanitizeAdCopy(parsed)).ad;
 }
 
 /** Template fallback when no API key — still varies by angle */
@@ -151,7 +152,7 @@ export function fallbackAd(
     };
   }
 
-  return sanitizeAdCopy(base);
+  return applyOdqCompliance(sanitizeAdCopy(base)).ad;
 }
 
 export async function generateAdCopy(
@@ -173,7 +174,7 @@ export async function generateAdCopy(
       buildUserPrompt(req, angle)
     );
     ad.angle = ad.angle || angle;
-    return { ad: sanitizeAdCopy(ad), angle: ad.angle };
+    return { ad: applyOdqCompliance(sanitizeAdCopy(ad)).ad, angle: ad.angle };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
     const useFallback =

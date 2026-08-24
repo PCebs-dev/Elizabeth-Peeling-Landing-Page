@@ -211,6 +211,19 @@ export function AdPreview({
             : ad.disclaimer}
         </p>
       )}
+      <div className="rounded-xl border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-4 py-3 text-[11px] leading-relaxed text-[rgb(var(--brand-700))]">
+        <p className="font-semibold text-[rgb(var(--brand-900))]">
+          Code de déontologie (ODQ)
+        </p>
+        <p className="mt-1">
+          Captions must identify Dr. Elizabeth Peeling, D.M.D., as a general
+          dentist (dentiste généraliste) with clinic coordinates. No
+          testimonials, no comparisons, no guaranteed results. If a regular
+          price and an exceptional price both appear on the image or in copy,
+          they must use the same font, size, and weight — never a larger sale
+          price.
+        </p>
+      </div>
 
       {ad.channel === "paid" && ad.paid ? (
         <div className="rounded-2xl border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] p-5 text-sm">

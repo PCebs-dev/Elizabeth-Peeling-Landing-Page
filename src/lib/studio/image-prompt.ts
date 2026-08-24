@@ -227,6 +227,7 @@ export function refinedOnImageTypographyPrompt(input: {
     "At most ONE short headline (about 3–8 words). It may wrap onto two lines of the SAME phrase. Nothing else.",
     "Placement: lower third or a quiet upper corner. Generous negative space. Never cover the face, eyes, or smile.",
     "Type: clean editorial sans-serif or refined serif, high contrast, no fake UI chrome, no drop-shadow stickers.",
+    "CODE DE DÉONTOLOGIE (3.09.07): if the headline contains two prices (regular and exceptional), render both in the SAME font, SAME point size, SAME weight, and SAME colour. Never make the sale price larger or bolder. No strikethrough of the regular price. Do not add ODQ logos or patient testimonials on the image.",
     "FORBIDDEN: extra text boxes, white cards, blue buttons, checklists, checkmarks, icons, camera badges, POV labels, CTAs, clinic addresses, disclaimers, hashtags, logos, captions, bullet lists, or stacked panels.",
     "If the source already has boxes, buttons, or extra copy, REMOVE them. Keep the photograph and a single headline.",
     `The output MUST include clearly readable ${langLabel} words — a text-free photo is incorrect.`,
@@ -396,6 +397,7 @@ export function buildImagePrompt(input: {
     "No medical gore, blood, surgery, needles in focus, or graphic clinical procedures.",
     "No before/after split images. Tasteful cosmetic dentistry advertising style.",
     "Do not depict any specific real dentist.",
+    "Do not render the ODQ graphic symbol, fake testimonials, star ratings, or two prices at different type sizes (regular and exceptional prices must match exactly if both appear).",
   ].join(" ");
 
   if (subjectKind === "people") {

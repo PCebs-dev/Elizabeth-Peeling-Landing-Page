@@ -1,5 +1,6 @@
 import { getCategory } from "./categories";
 import { STUDIO_CLINIC } from "./targeting";
+import { ODQ_COPY_SYSTEM } from "./odq-compliance";
 import type { GenerateRequest, StudioCategoryId } from "./types";
 
 /** Creative angles — one is picked at random per generation */
@@ -79,7 +80,9 @@ Rules:
 - French must be Quebec-friendly (vous, natural phrasing), not overly formal European French.
 - In French myth-bust copy, always write "Mythe :" — never leave the English word "Myth" in headlines or captions.
 - Vary structure every time: hooks and line breaks are fine; zero emojis.
-- Output ONLY valid JSON matching the schema described in the user message.`;
+- Output ONLY valid JSON matching the schema described in the user message.
+
+${ODQ_COPY_SYSTEM}`;
 }
 
 export function buildUserPrompt(
@@ -138,12 +141,14 @@ export function buildUserPrompt(
 Category: ${category.label} (${category.description})
 Channel: ${req.channel === "paid" ? "Paid Meta (Facebook/Instagram) local ads" : "Organic Instagram/Facebook post"}
 Creative angle (must follow): ${angle} — ${ANGLE_GUIDANCE[angle]}
-Practitioner notes: ${req.notes.trim() || "(none)"}
+Practitioner notes / caption prompt (weave these facts in; ODQ rules still override if they conflict): ${req.notes.trim() || "(none — write a strong original caption from the category, angle, and image context)"}
 Selected images context: ${req.imageHints.length ? req.imageHints.join("; ") : "(photos selected; no extra notes)"}
 ${langInstruction}
 
 Always name the practice naturally (e.g. "with Dr. Elizabeth Peeling at Clinique LE 32" / "avec Dre Elizabeth Peeling à Clinique LE 32") in the caption or CTA when natural. Never use "At Dr. … at Clinique…".
 Write complete sentences only — do not truncate captions mid-word.
+If the caption prompt includes a promo or price, include those figures exactly. Add examination-required language in the disclaimer field, not as scare-copy in the body.
+Think through ODQ advertising rules before you write. If a line would violate them, rewrite it.
 ${avoid}
 
 Return JSON with this shape:

@@ -19,18 +19,12 @@ interface CaptionPanelProps {
   error: string;
   warning: string;
   hasActive: boolean;
-  favorite?: boolean;
   onLanguageChange: (lang: StudioLanguage) => void;
   onCategoryChange: (id: StudioCategoryId) => void;
+  captionPrompt: string;
+  onCaptionPromptChange: (value: string) => void;
+  onRandomizeCaptionPrompt: () => void;
   onGenerateAd: () => void;
-  onCopyCaption: () => void;
-  onCopyHashtags: () => void;
-  onDownloadPack: () => void;
-  onSave?: () => void;
-  saveLabel?: string;
-  saveBusy?: boolean;
-  onToggleFavorite?: () => void;
-  onDiscard?: () => void;
 }
 
 export function CaptionPanel({
@@ -47,18 +41,12 @@ export function CaptionPanel({
   error,
   warning,
   hasActive,
-  favorite,
   onLanguageChange,
   onCategoryChange,
+  captionPrompt,
+  onCaptionPromptChange,
+  onRandomizeCaptionPrompt,
   onGenerateAd,
-  onCopyCaption,
-  onCopyHashtags,
-  onDownloadPack,
-  onSave,
-  saveLabel = "Save",
-  saveBusy = false,
-  onToggleFavorite,
-  onDiscard,
 }: CaptionPanelProps) {
   const busy = loading || aiLoading || publishLoading;
   const canGenerateAd = Boolean(selectedPhotoName);
@@ -108,6 +96,36 @@ export function CaptionPanel({
         </label>
       </div>
 
+      <label className="mt-4 block text-xs font-medium text-[rgb(var(--brand-800))]">
+        Caption prompt
+        <textarea
+          value={captionPrompt}
+          onChange={(e) => onCaptionPromptChange(e.target.value)}
+          rows={5}
+          disabled={busy}
+          placeholder={
+            "Optional: add promo pricing or a direction before generating.\nExample: Spring whitening $249, exam required, offer until May 31."
+          }
+          className="mt-1.5 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-3 py-2.5 text-base text-[rgb(var(--brand-950))] sm:text-sm"
+        />
+      </label>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          onClick={onRandomizeCaptionPrompt}
+          disabled={busy}
+          className="min-h-10 rounded-md border border-[rgb(var(--brand-300))] bg-white px-3 py-1.5 text-xs font-medium text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-100))] disabled:opacity-60"
+        >
+          Random prompt
+        </button>
+        <p className="text-[11px] leading-snug text-[rgb(var(--brand-600))]">
+          AI still writes the caption. Your prompt steers it (pricing, occasion,
+          tone). Every caption is written and checked against the Code de
+          déontologie des dentistes (ODQ), including identification as a
+          general dentist and same-size type when two prices appear.
+        </p>
+      </div>
+
       <p className="mt-3 text-xs text-[rgb(var(--brand-600))]">
         {selectedPhotoName
           ? `Selected: ${selectedPhotoName}${selectedIsAi ? " · AI" : ""}${selectedIsVideo ? " · video" : ""}${
@@ -139,60 +157,6 @@ export function CaptionPanel({
             ? "New caption"
             : "Generate caption"}
       </button>
-
-      {hasActive ? (
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={onCopyCaption}
-            className="min-h-11 rounded-lg border border-[rgb(var(--brand-300))] px-3 py-2 text-sm hover:bg-[rgb(var(--brand-50))]"
-          >
-            Copy caption
-          </button>
-          <button
-            type="button"
-            onClick={onCopyHashtags}
-            className="min-h-11 rounded-lg border border-[rgb(var(--brand-300))] px-3 py-2 text-sm hover:bg-[rgb(var(--brand-50))]"
-          >
-            Copy hashtags
-          </button>
-          <button
-            type="button"
-            onClick={onDownloadPack}
-            className="min-h-11 rounded-lg border border-[rgb(var(--brand-300))] px-3 py-2 text-sm hover:bg-[rgb(var(--brand-50))]"
-          >
-            Share pack
-          </button>
-          {onSave ? (
-            <button
-              type="button"
-              onClick={onSave}
-              disabled={busy || saveBusy}
-              className="min-h-11 rounded-lg bg-[rgb(var(--brand-800))] px-3 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--brand-900))] disabled:opacity-60"
-            >
-              {saveBusy ? "Saving…" : saveLabel}
-            </button>
-          ) : null}
-          {onToggleFavorite ? (
-            <button
-              type="button"
-              onClick={onToggleFavorite}
-              className="min-h-11 rounded-lg border border-[rgb(var(--brand-300))] px-3 py-2 text-sm hover:bg-[rgb(var(--brand-50))]"
-            >
-              {favorite ? "★ Favorited" : "☆ Favorite"}
-            </button>
-          ) : null}
-          {onDiscard ? (
-            <button
-              type="button"
-              onClick={onDiscard}
-              className="min-h-11 rounded-lg px-3 py-2 text-sm text-red-700 hover:underline"
-            >
-              Discard
-            </button>
-          ) : null}
-        </div>
-      ) : null}
     </section>
   );
 }

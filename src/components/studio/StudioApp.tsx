@@ -23,6 +23,7 @@ import {
   rollIncludeOnImageText,
   withOnImageTextLine,
 } from "@/lib/studio/image-context";
+import { randomCaptionPrompt } from "@/lib/studio/caption-prompt";
 import { pickShortOnImageHeadline } from "@/lib/studio/image-prompt";
 import { stripHashtagsFromCaption } from "@/lib/studio/sanitize-copy";
 import type {
@@ -185,6 +186,7 @@ export function StudioApp() {
     );
   });
   const [language, setLanguage] = useState<StudioLanguage>("both");
+  const [captionPrompt, setCaptionPrompt] = useState("");
   const channel: StudioChannel = "organic";
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -638,12 +640,15 @@ export function StudioApp() {
         .map((h) => h.angle)
         .slice(0, 5);
 
-      const notes =
+      const photoContext =
         selectedPhoto.note ||
         (selectedPhoto.mediaKind === "video" ||
         selectedPhoto.mimeType.startsWith("video/")
           ? `Ad based on AI/social video: ${selectedPhoto.name}`
           : `Ad based on uploaded photo: ${selectedPhoto.name}`);
+      const notes = [captionPrompt.trim(), photoContext]
+        .filter(Boolean)
+        .join("\n\n");
 
       const res = await fetch("/api/studio/generate", {
         method: "POST",
@@ -2216,46 +2221,12 @@ export function StudioApp() {
             hasActive={Boolean(activeAd)}
             onLanguageChange={setLanguage}
             onCategoryChange={setCaptionCategoryId}
+            captionPrompt={captionPrompt}
+            onCaptionPromptChange={setCaptionPrompt}
+            onRandomizeCaptionPrompt={() =>
+              setCaptionPrompt(randomCaptionPrompt(captionCategoryId))
+            }
             onGenerateAd={() => void generateAdFromPhoto()}
-            onCopyCaption={() => void onCopyCaption()}
-            onCopyHashtags={() => void onCopyHashtags()}
-            onDownloadPack={() => void onDownloadPack()}
-            onSave={
-              activeAd &&
-              !viewingSavedAd &&
-              !savedAds.some((a) => a.id === activeAd.id)
-                ? () => void saveCurrentAd()
-                : undefined
-            }
-            saveBusy={savingAd}
-            saveLabel="Save"
-            onToggleFavorite={
-              activeAd
-                ? () => {
-                    if (savedViewAd && savedActiveId === activeAd.id) {
-                      void toggleSavedFavorite(activeAd.id);
-                    } else {
-                      toggleFavorite(activeAd.id);
-                    }
-                  }
-                : undefined
-            }
-            favorite={
-              savedViewAd && savedActiveId === activeAd?.id
-                ? Boolean(savedAds.find((a) => a.id === savedActiveId)?.favorite)
-                : activeAd?.favorite
-            }
-            onDiscard={
-              activeAd
-                ? () => {
-                    if (savedViewAd && savedActiveId === activeAd.id) {
-                      void discardSaved(activeAd.id);
-                    } else {
-                      discardAd(activeAd.id);
-                    }
-                  }
-                : undefined
-            }
           />
           </div>
 

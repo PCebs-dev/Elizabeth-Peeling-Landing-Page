@@ -133,8 +133,8 @@ export function buildExportMarkdown(ad: GeneratedAd): string {
     ``,
     `---`,
     ad.aiImage
-      ? `Compliance: Results vary. Creative source is AI-generated (not a real patient). Disclose when required. This content is for marketing review only — not medical advice.`
-      : `Compliance: Results vary. This content is for marketing review only — not medical advice.`,
+      ? `Compliance (Code de déontologie des dentistes, CQLR c D-3, r. 4): Identify Dr. Elizabeth Peeling, D.M.D., General Dentist / dentiste généraliste with clinic coordinates. No testimonials, no comparative ads, no guaranteed results. Regular + exceptional prices must appear in the same character size. Regular advertised fees stay in force 90 days after last publication. Keep a full copy of this ad for 5 years. Creative source is AI-generated (not a real patient). Disclose when required. Marketing review only — not medical advice.`
+      : `Compliance (Code de déontologie des dentistes, CQLR c D-3, r. 4): Identify Dr. Elizabeth Peeling, D.M.D., General Dentist / dentiste généraliste with clinic coordinates. No testimonials, no comparative ads, no guaranteed results. Regular + exceptional prices must appear in the same character size. Regular advertised fees stay in force 90 days after last publication. Keep a full copy of this ad for 5 years. Marketing review only — not medical advice.`,
     ``
   );
 
