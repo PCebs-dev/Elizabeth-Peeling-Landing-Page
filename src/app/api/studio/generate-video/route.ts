@@ -37,8 +37,8 @@ import {
 } from "@/lib/studio/types";
 
 export const runtime = "nodejs";
-/** DoP often needs 3–8 minutes; Vercel Pro / Fluid allows up to 800s. Hobby plans still cap lower. */
-export const maxDuration = 800;
+/** Plan cap is 300s; Higgsfield polling must finish before this or Vercel returns 504. */
+export const maxDuration = 300;
 
 const CATEGORY_IDS = new Set(STUDIO_CATEGORIES.map((c) => c.id));
 

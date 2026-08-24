@@ -233,8 +233,8 @@ function extractVideoUrl(status: HfStatus): string | undefined {
   return undefined;
 }
 
-/** DoP image-to-video often needs 3–8+ minutes. Keep under generate-video maxDuration (800s) plus TTS mux. */
-export const HIGGSFIELD_POLL_MAX_WAIT_MS = 740_000;
+/** Stay under the 300s route cap so we return JSON instead of a Vercel 504. */
+export const HIGGSFIELD_POLL_MAX_WAIT_MS = 240_000;
 
 async function pollUntilDone(
   statusUrl: string,
