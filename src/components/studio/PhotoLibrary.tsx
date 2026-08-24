@@ -10,7 +10,8 @@ interface PhotoLibraryProps {
   selectedId: string | null;
   beforeMergeId?: string | null;
   afterMergeId?: string | null;
-  mergePickSlot?: "before" | "after" | null;
+  mergePickSlot?: "before" | "after" | "video" | null;
+  videoStillId?: string | null;
   categories: StudioCategory[];
   onUpload: (files: FileList | File[], categoryId: StudioCategoryId) => Promise<void>;
   onSelect: (id: string) => void;
@@ -27,6 +28,7 @@ export function PhotoLibrary({
   beforeMergeId = null,
   afterMergeId = null,
   mergePickSlot = null,
+  videoStillId = null,
   categories,
   onUpload,
   onSelect,
@@ -182,8 +184,12 @@ export function PhotoLibrary({
           {mergePickSlot ? (
             <p className="mt-4 rounded-lg bg-[rgb(var(--brand-100))] px-3 py-2 text-xs text-[rgb(var(--brand-800))]">
               Tap a photo to set{" "}
-              {mergePickSlot === "before" ? "Before" : "After"}. Tap it again to
-              deselect.
+              {mergePickSlot === "before"
+                ? "Before"
+                : mergePickSlot === "after"
+                  ? "After"
+                  : "the video still"}
+              . Tap it again to deselect.
             </p>
           ) : null}
           <ul className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
@@ -191,6 +197,7 @@ export function PhotoLibrary({
               const selected = selectedId === photo.id;
               const isBefore = beforeMergeId === photo.id;
               const isAfter = afterMergeId === photo.id;
+              const isVideoStill = videoStillId === photo.id;
               const isVideo =
                 photo.mediaKind === "video" ||
                 photo.mimeType.startsWith("video/");
@@ -198,7 +205,7 @@ export function PhotoLibrary({
                 <li
                   key={photo.id}
                   className={`overflow-hidden rounded-lg border transition ${
-                    selected || isBefore || isAfter
+                    selected || isBefore || isAfter || isVideoStill
                       ? "border-[rgb(var(--brand-600))] ring-2 ring-[rgb(var(--brand-300))]"
                       : "border-[rgb(var(--brand-200))] hover:border-[rgb(var(--brand-400))]"
                   }`}

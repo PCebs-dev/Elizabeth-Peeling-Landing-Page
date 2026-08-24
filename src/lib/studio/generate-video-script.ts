@@ -304,6 +304,118 @@ async function requestScript(params: {
   return script.slice(0, 1200);
 }
 
+function fallbackMotionPrompt(
+  categoryId: StudioCategoryId,
+  tone: StudioVideoTone,
+  duration: StudioVideoDuration
+): string {
+  const category = getCategory(categoryId);
+  const energy = TONE_MOTION_HINT[tone];
+  return [
+    `Animate this still as a ${duration}-second ${category.label} social clip.`,
+    energy,
+    "Keep the same person and framing. Subtle smile, natural blink, gentle camera push-in.",
+    "Photorealistic. No on-screen text, logos, extra people, or surgical close-ups.",
+  ].join(" ");
+}
+
+const TONE_MOTION_HINT: Record<StudioVideoTone, string> = {
+  warm: "Warm, inviting micro-motion.",
+  humorous: "Light playful energy — never mocking.",
+  random_funny: "Expressive, shareable micro-reaction.",
+  random_edgy: "Sharper attitude, dry smirk, still tasteful.",
+  serious: "Steady, premium, calm camera.",
+  inspirational: "Confident posture, hopeful light shift.",
+  educational: "Clear, focused, unhurried motion.",
+  soft_cta: "Friendly eye contact, approachable invitation energy.",
+};
+
+/**
+ * Image-to-video direction for Higgsfield. Editable by the dentist before generate.
+ */
+export async function generateVideoMotionPrompt(input: {
+  categoryId: StudioCategoryId;
+  notes?: string;
+  photoNote?: string;
+  tone: StudioVideoTone;
+  duration?: StudioVideoDuration;
+}): Promise<{ prompt: string; warning?: string }> {
+  const tone = input.tone;
+  const duration = parseStudioVideoDuration(input.duration);
+  const category = getCategory(input.categoryId);
+  const notes = input.notes?.trim().slice(0, 800) || "";
+  const photoNote = input.photoNote?.trim().slice(0, 400) || "";
+  const fallback = fallbackMotionPrompt(input.categoryId, tone, duration);
+
+  if (!process.env.OPENAI_API_KEY) {
+    return {
+      prompt: fallback,
+      warning: "OPENAI_API_KEY missing — used a local animation prompt.",
+    };
+  }
+
+  const system = [
+    "You write image-to-video motion prompts for cosmetic-dentistry social clips.",
+    "The source is an existing still photo. Preserve identity, wardrobe, and setting.",
+    'Return JSON only: { "prompt": string }.',
+    "Rules:",
+    `- Target length about ${duration} seconds.`,
+    `- Treatment theme: ${category.label}.`,
+    `- Energy: ${TONE_MOTION_HINT[tone]}`,
+    "- 2 to 5 short sentences. Camera and subject motion only.",
+    "- No on-screen text, slogans, logos, or watermarks.",
+    "- No needles, gore, or guaranteed clinical outcomes.",
+    "- Do not invent a different person than the still.",
+  ].join("\n");
+
+  const user = [
+    `Theme: ${category.label}`,
+    photoNote ? `Still description: ${photoNote}` : "Still: clinic marketing photo.",
+    notes ? `Extra direction: ${notes}` : "",
+    "Write the motion prompt now.",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+        temperature: 0.85,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`OpenAI error ${res.status}: ${text.slice(0, 300)}`);
+    }
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) throw new Error("Empty OpenAI response");
+    const parsed = JSON.parse(content) as { prompt?: string; script?: string };
+    const prompt = (parsed.prompt || parsed.script || "").trim();
+    if (prompt.length < 12) throw new Error("Incomplete motion prompt");
+    return { prompt: prompt.slice(0, 1200) };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Motion prompt failed";
+    return {
+      prompt: fallback,
+      warning: `${message} — used a local animation prompt.`,
+    };
+  }
+}
+
 export async function generateVideoScript(input: {
   categoryId: StudioCategoryId;
   notes?: string;

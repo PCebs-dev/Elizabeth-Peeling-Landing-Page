@@ -231,14 +231,6 @@ export function AdPreview({
         ) : null}
       </div>
 
-      {(ad.disclaimer || ad.fr?.disclaimer) && (
-        <p className="text-xs text-[rgb(var(--brand-600))]">
-          Disclaimer:{" "}
-          {language === "fr" && ad.fr?.disclaimer
-            ? ad.fr.disclaimer
-            : ad.disclaimer}
-        </p>
-      )}
       <div className="rounded-xl border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-4 py-3 text-[11px] leading-relaxed text-[rgb(var(--brand-700))]">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <p className="font-semibold text-[rgb(var(--brand-900))]">

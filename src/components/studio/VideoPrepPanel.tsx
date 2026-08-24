@@ -32,6 +32,10 @@ interface VideoPrepPanelProps {
   warning?: string;
   /** Shown after API fallback so the user can open Higgsfield manually. */
   higgsfieldUrl?: string;
+  motionPrompt: string;
+  motionPromptLoading?: boolean;
+  onMotionPromptChange: (value: string) => void;
+  onRegenerateMotionPrompt?: () => void;
   onScriptChange: (script: string) => void;
   onScriptCategoryChange: (id: StudioCategoryId) => void;
   onTtsVoiceChange: (voice: StudioTtsVoiceId) => void;
@@ -60,6 +64,10 @@ export function VideoPrepPanel({
   error = "",
   warning = "",
   higgsfieldUrl = "",
+  motionPrompt,
+  motionPromptLoading = false,
+  onMotionPromptChange,
+  onRegenerateMotionPrompt,
   onScriptChange,
   onScriptCategoryChange,
   onTtsVoiceChange,
@@ -68,7 +76,7 @@ export function VideoPrepPanel({
   onConfirmVideo,
   onCancel,
 }: VideoPrepPanelProps) {
-  const busy = scriptLoading || videoLoading || ttsPreviewLoading;
+  const busy = scriptLoading || videoLoading || ttsPreviewLoading || motionPromptLoading;
   const needsSpokenAudio =
     voiceMode === "v1_voiceover" || voiceMode === "v2_talking_head";
   const canConfirm = Boolean(
@@ -189,6 +197,28 @@ export function VideoPrepPanel({
               with a different treatment script.
             </p>
           )}
+
+          <label className="block text-xs font-medium text-[rgb(var(--brand-800))]">
+            Animation prompt
+            <textarea
+              value={motionPrompt}
+              onChange={(e) => onMotionPromptChange(e.target.value)}
+              rows={4}
+              disabled={busy}
+              placeholder="How this still should move…"
+              className="mt-1.5 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-white px-3 py-2 text-sm text-[rgb(var(--brand-950))]"
+            />
+          </label>
+          {onRegenerateMotionPrompt ? (
+            <button
+              type="button"
+              onClick={onRegenerateMotionPrompt}
+              disabled={busy}
+              className="text-xs font-medium text-[rgb(var(--brand-800))] underline underline-offset-2 disabled:opacity-60"
+            >
+              {motionPromptLoading ? "Writing motion…" : "Rewrite animation prompt"}
+            </button>
+          ) : null}
 
           <label className="block text-xs font-medium text-[rgb(var(--brand-800))]">
             Video script (spoken)

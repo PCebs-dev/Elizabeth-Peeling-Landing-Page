@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { STUDIO_COOKIE, verifySessionToken } from "@/lib/studio/auth";
 import { STUDIO_CATEGORIES } from "@/lib/studio/categories";
 import {
+  generateVideoMotionPrompt,
   generateVideoScript,
   type VideoSpokenLanguage,
 } from "@/lib/studio/generate-video-script";
@@ -27,7 +28,8 @@ function parseSpokenLanguage(v: unknown): VideoSpokenLanguage {
 
 /**
  * POST /api/studio/generate-video-script
- * { categoryId, notes?, tone, language?: "en"|"fr", duration?, avoidScripts? }
+ * { categoryId, notes?, photoNote?, tone, language?: "en"|"fr", duration?,
+ *   avoidScripts?, kind?: "script" | "motion" }
  */
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -66,7 +68,10 @@ export async function POST(request: Request) {
   }
 
   const notes = typeof b.notes === "string" ? b.notes.slice(0, 2000) : "";
+  const photoNote =
+    typeof b.photoNote === "string" ? b.photoNote.slice(0, 400) : "";
   const duration = parseStudioVideoDuration(b.duration);
+  const kind = b.kind === "motion" ? "motion" : "script";
   const avoidScripts = Array.isArray(b.avoidScripts)
     ? b.avoidScripts
         .filter((x): x is string => typeof x === "string")
@@ -74,6 +79,16 @@ export async function POST(request: Request) {
     : [];
 
   try {
+    if (kind === "motion") {
+      const result = await generateVideoMotionPrompt({
+        categoryId: b.categoryId,
+        notes,
+        photoNote,
+        tone: b.tone as StudioVideoTone,
+        duration,
+      });
+      return NextResponse.json(result);
+    }
     const result = await generateVideoScript({
       categoryId: b.categoryId,
       notes,

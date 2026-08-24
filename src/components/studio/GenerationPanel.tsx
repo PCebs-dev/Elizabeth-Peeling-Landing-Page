@@ -36,12 +36,21 @@ interface GenerationPanelProps {
   onPrepareAiVideo: () => void;
   onMergeImages?: () => void;
   mergeLoading?: boolean;
-  mergePickSlot?: "before" | "after" | null;
-  onPickMergeSlot?: (slot: "before" | "after") => void;
+  mergePickSlot?: "before" | "after" | "video" | null;
+  onPickMergeSlot?: (slot: "before" | "after" | "video") => void;
   beforeMergePreviewUrl?: string | null;
   afterMergePreviewUrl?: string | null;
   onClearMergeBefore?: () => void;
   onClearMergeAfter?: () => void;
+  videoStillSource?: "ai" | "library";
+  onVideoStillSourceChange?: (source: "ai" | "library") => void;
+  videoStillPreviewUrl?: string | null;
+  videoStillPickActive?: boolean;
+  onClearVideoStill?: () => void;
+  videoMotionPrompt?: string;
+  onVideoMotionPromptChange?: (value: string) => void;
+  onGenerateVideoMotionPrompt?: () => void;
+  videoMotionLoading?: boolean;
   videoLoading?: boolean;
   videoPrepLoading?: boolean;
   videoPrepActive?: boolean;
@@ -80,6 +89,15 @@ export function GenerationPanel({
   afterMergePreviewUrl = null,
   onClearMergeBefore,
   onClearMergeAfter,
+  videoStillSource = "ai",
+  onVideoStillSourceChange,
+  videoStillPreviewUrl = null,
+  videoStillPickActive = false,
+  onClearVideoStill,
+  videoMotionPrompt = "",
+  onVideoMotionPromptChange,
+  onGenerateVideoMotionPrompt,
+  videoMotionLoading = false,
 }: GenerationPanelProps) {
   const busy =
     loading ||
@@ -87,10 +105,12 @@ export function GenerationPanel({
     videoLoading ||
     videoPrepLoading ||
     publishLoading ||
-    mergeLoading;
+    videoMotionLoading;
   const canMerge = Boolean(
     onMergeImages && beforeMergePreviewUrl && afterMergePreviewUrl
   );
+  const canPrepareVideo =
+    videoStillSource === "ai" || Boolean(videoStillPreviewUrl);
   const { include: includeOnImageText, headline: onImageHeadline } =
     parseOnImageTextLine(imageContext);
 
@@ -229,6 +249,114 @@ export function GenerationPanel({
         </label>
       </div>
 
+      <div className="mt-4 rounded-xl border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] p-3">
+        <p className="text-xs font-medium text-[rgb(var(--brand-800))]">
+          Video still
+        </p>
+        <p className="mt-1 text-xs text-[rgb(var(--brand-600))]">
+          Animate a new AI image from the prompt above, or pick a library photo
+          and describe the motion.
+        </p>
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => onVideoStillSourceChange?.("ai")}
+            disabled={busy}
+            className={`min-h-10 rounded-md px-3 py-1.5 text-xs font-medium ${
+              videoStillSource === "ai"
+                ? "bg-[rgb(var(--brand-800))] text-white"
+                : "border border-[rgb(var(--brand-300))] bg-white text-[rgb(var(--brand-800))]"
+            }`}
+          >
+            New AI image
+          </button>
+          <button
+            type="button"
+            onClick={() => onVideoStillSourceChange?.("library")}
+            disabled={busy}
+            className={`min-h-10 rounded-md px-3 py-1.5 text-xs font-medium ${
+              videoStillSource === "library"
+                ? "bg-[rgb(var(--brand-800))] text-white"
+                : "border border-[rgb(var(--brand-300))] bg-white text-[rgb(var(--brand-800))]"
+            }`}
+          >
+            Library photo
+          </button>
+        </div>
+        {videoStillSource === "library" ? (
+          <div className="mt-3 max-w-[160px]">
+            <div
+              className={`overflow-hidden rounded-lg border bg-white ${
+                videoStillPickActive
+                  ? "border-[rgb(var(--brand-600))] ring-2 ring-[rgb(var(--brand-300))]"
+                  : "border-[rgb(var(--brand-200))]"
+              }`}
+            >
+              <button
+                type="button"
+            onClick={() => onPickMergeSlot?.("video")}
+                className="block w-full aspect-square bg-[rgb(var(--brand-100))]"
+              >
+                {videoStillPreviewUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={videoStillPreviewUrl}
+                    alt="Video still"
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full items-center justify-center px-2 text-xs text-[rgb(var(--brand-600))]">
+                    {videoStillPickActive
+                      ? "Tap a library photo"
+                      : "Tap to choose photo"}
+                  </span>
+                )}
+              </button>
+              <div className="flex items-center justify-between px-2 py-1.5">
+                <span className="text-[11px] font-medium text-[rgb(var(--brand-800))]">
+                  Still
+                </span>
+                {videoStillPreviewUrl && onClearVideoStill ? (
+                  <button
+                    type="button"
+                    onClick={onClearVideoStill}
+                    className="text-[11px] text-red-700 hover:underline"
+                  >
+                    Clear
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-2 text-[11px] text-[rgb(var(--brand-600))]">
+            Generate AI image first, or Prepare AI video will create a still
+            from the prompt.
+          </p>
+        )}
+        <label className="mt-3 block text-xs font-medium text-[rgb(var(--brand-800))]">
+          Animation prompt
+          <textarea
+            value={videoMotionPrompt}
+            onChange={(e) => onVideoMotionPromptChange?.(e.target.value)}
+            rows={4}
+            disabled={busy}
+            placeholder="How should this photo move? AI can draft this — then edit it."
+            className="mt-1.5 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-white px-3 py-2 text-sm text-[rgb(var(--brand-950))]"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => onGenerateVideoMotionPrompt?.()}
+          disabled={
+            busy || (videoStillSource === "library" && !videoStillPreviewUrl)
+          }
+          className="mt-2 min-h-10 rounded-md border border-[rgb(var(--brand-300))] bg-white px-3 py-1.5 text-xs font-medium text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-100))] disabled:opacity-60"
+        >
+          {videoMotionLoading ? "Writing…" : "Write animation prompt"}
+        </button>
+      </div>
+
       {error ? (
         <p className="mt-3 text-sm text-red-700" role="alert">
           {error}
@@ -260,7 +388,7 @@ export function GenerationPanel({
         <button
           type="button"
           onClick={onPrepareAiVideo}
-          disabled={busy}
+          disabled={busy || !canPrepareVideo}
           className="min-h-12 rounded-lg bg-[rgb(var(--brand-800))] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[rgb(var(--brand-900))] disabled:opacity-60 sm:col-span-2"
         >
           {videoPrepLoading

@@ -233,8 +233,8 @@ function extractVideoUrl(status: HfStatus): string | undefined {
   return undefined;
 }
 
-/** DoP image-to-video often needs 3–8+ minutes; leave headroom under route maxDuration. */
-export const HIGGSFIELD_POLL_MAX_WAIT_MS = 660_000;
+/** DoP image-to-video often needs 3–8+ minutes. Keep under generate-video maxDuration (800s) plus TTS mux. */
+export const HIGGSFIELD_POLL_MAX_WAIT_MS = 740_000;
 
 async function pollUntilDone(
   statusUrl: string,

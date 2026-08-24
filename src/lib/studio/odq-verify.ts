@@ -36,7 +36,14 @@ export interface OdqAuditResult {
 }
 
 const MONEY =
-  /\$\s*\d[\d,]*(?:\.\d{2})?|\d[\d\s,]*(?:\.\d{2})?\s*(?:\$|CAD\b)|promo(?:tional)?\s+price|prix\s+promo|down\s+payment|acompte|prix\s+exceptionnel|exceptional\s+price/i;
+  /\$\s*\d[\d\s,]*(?:\.\d{2})?|\d[\d\s,]*(?:\.\d{2})?\s*(?:\$|CAD\b)/i;
+
+const PRICE_LINE =
+  /^(nature of the service|regular price|exceptional price|special price|expiry date|materials|laboratory or other services included|lab(?:oratory)?(?:\s*\/\s*other services included)?:|additional services(?: that may be required and are not included)?|the advertised regular price remains|nature du service|prix r[ée]gulier|prix exceptionnel|date d['’]expiration|mat[ée]riaux|services de laboratoire|services additionnels|le prix r[ée]gulier annonc[ée])/i;
+
+/** Label-only lines the model (or a prior strip) leaves in the caption with no amount. */
+const EMPTY_PRICE_LABEL =
+  /^(nature of the service|regular price|exceptional price|special price|expiry date|materials|laboratory|lab|additional services|nature du service|prix r[ée]gulier|prix exceptionnel|date d['’]expiration|mat[ée]riaux|laboratoire|services additionnels)\s*:?\s*$/i;
 
 const FINANCING =
   /\b(beautifi|financing may be|may be available to help|0\s*%\s*interest|everyone (?:is )?approv|taux d['’]intérêt|financement peut)\b/i;
@@ -68,50 +75,95 @@ function collectText(ad: GeneratedAdCopy): string {
     .join("\n");
 }
 
-function capture(source: string, patterns: RegExp[]): string | undefined {
-  for (const re of patterns) {
-    const m = re.exec(source);
-    const value = m?.[1]?.trim();
-    if (value) return value.replace(/[.;]+$/, "").trim();
+
+function isPlaceholderAmount(value: string): boolean {
+  return /^(x|y|\.{2,}|…)$/i.test(value.trim());
+}
+
+function captureLabeled(
+  source: string,
+  labels: RegExp[],
+  kind: "money" | "text"
+): string | undefined {
+  for (const raw of source.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    for (const re of labels) {
+      const m = re.exec(line);
+      const value = m?.[1]?.trim().replace(/[.;]+$/, "").trim();
+      if (!value || isPlaceholderAmount(value)) continue;
+      if (kind === "money") {
+        const amount = value.replace(/[^\d.,]/g, "");
+        if (!/\d/.test(amount)) continue;
+        return value.replace(/\s+/g, " ");
+      }
+      if (value.length < 3) continue;
+      return value.replace(/\s+/g, " ");
+    }
   }
   return undefined;
 }
 
 export function parseOdqPriceFacts(source: string): OdqPriceFacts {
-  const text = source.replace(/\s+/g, " ");
   return {
-    regularPrice: capture(text, [
-      /regular\s+price[:\s]+\$?\s*([\d,]+(?:\.\d{2})?)/i,
-      /prix\s+r[ée]gulier[:\s]+\$?\s*([\d,]+(?:\.\d{2})?)/i,
-    ]),
-    exceptionalPrice: capture(text, [
-      /exceptional\s+price[:\s]+\$?\s*([\d,]+(?:\.\d{2})?)/i,
-      /prix\s+exceptionnel[:\s]+\$?\s*([\d,]+(?:\.\d{2})?)/i,
-      /special\s+price[:\s]+\$?\s*([\d,]+(?:\.\d{2})?)/i,
-      /promo(?:tional)?\s+price[:\s]+\$?\s*([\d,]+(?:\.\d{2})?)/i,
-    ]),
-    expiryDate: capture(text, [
-      /expir(?:y|ation|es|e)\s+date[:\s]+([^.\n]+)/i,
-      /date\s+d['’]expiration[:\s]+([^.\n]+)/i,
-      /offer until[:\s]+([^.\n]+)/i,
-      /offre jusqu['’]au[:\s]+([^.\n]+)/i,
-    ]),
-    serviceNature: capture(text, [
-      /(?:service|nature of (?:the )?(?:service|item))[:\s]+([^.\n]+)/i,
-      /nature du (?:bien ou )?service[:\s]+([^.\n]+)/i,
-    ]),
-    materials: capture(text, [
-      /materials?[:\s]+([^.\n]+)/i,
-      /mat[ée]riaux[:\s]+([^.\n]+)/i,
-    ]),
-    labIncluded: capture(text, [
-      /lab(?:oratory)?(?: or other services?)?[:\s]+([^.\n]+)/i,
-      /laboratoire[:\s]+([^.\n]+)/i,
-    ]),
-    additionalNotIncluded: capture(text, [
-      /additional services?[:\s]+([^.\n]+)/i,
-      /services? additionnels?[:\s]+([^.\n]+)/i,
-    ]),
+    regularPrice: captureLabeled(
+      source,
+      [
+        /^regular\s+price:\s*(.+)$/i,
+        /^prix\s+r[ée]gulier\s*:\s*(.+)$/i,
+      ],
+      "money"
+    ),
+    exceptionalPrice: captureLabeled(
+      source,
+      [
+        /^(?:exceptional|special|promo(?:tional)?)\s+price:\s*(.+)$/i,
+        /^prix\s+exceptionnel\s*:\s*(.+)$/i,
+      ],
+      "money"
+    ),
+    expiryDate: captureLabeled(
+      source,
+      [
+        /^expir(?:y|ation)\s+date:\s*(.+)$/i,
+        /^date\s+d['’]expiration\s*:\s*(.+)$/i,
+        /^offer until:\s*(.+)$/i,
+        /^offre jusqu['’]au\s*:\s*(.+)$/i,
+      ],
+      "text"
+    ),
+    serviceNature: captureLabeled(
+      source,
+      [
+        /^nature of the service:\s*(.+)$/i,
+        /^nature du (?:bien ou )?service\s*:\s*(.+)$/i,
+      ],
+      "text"
+    ),
+    materials: captureLabeled(
+      source,
+      [/^materials?:\s*(.+)$/i, /^mat[ée]riaux\s*:\s*(.+)$/i],
+      "text"
+    ),
+    labIncluded: captureLabeled(
+      source,
+      [
+        /^lab(?:oratory)?(?: \/ other services included)?:\s*(.+)$/i,
+        /^laboratory(?: or other services included)?:\s*(.+)$/i,
+        /^laboratoire\s*:\s*(.+)$/i,
+        /^services de laboratoire ou autres inclus\s*:\s*(.+)$/i,
+      ],
+      "text"
+    ),
+    additionalNotIncluded: captureLabeled(
+      source,
+      [
+        /^additional services(?: that may be required and are not included)?:\s*(.+)$/i,
+        /^additional services not included:\s*(.+)$/i,
+        /^services? additionnels?(?: pouvant être requis et non inclus)?\s*:\s*(.+)$/i,
+      ],
+      "text"
+    ),
   };
 }
 
@@ -177,15 +229,45 @@ function formatPriceBlock(facts: OdqPriceFacts, french: boolean): string {
   return lines.join("\n");
 }
 
+function normalizePriceLine(line: string): string {
+  return line
+    .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, " ")
+    .replace(/[*_`#]+/g, "")
+    .replace(/^[\s>*•·\-–—\d.)]+/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function stripPriceDisclosure(text: string): string {
+  const kept = text
+    .split(/\r?\n/)
+    .filter((line) => !PRICE_LINE.test(normalizePriceLine(line)));
+  return kept
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function stripDanglingPriceLabels(text: string): string {
+  const kept = text.split(/\r?\n/).filter((line) => {
+    const normalized = normalizePriceLine(line);
+    if (!normalized) return true;
+    return !EMPTY_PRICE_LABEL.test(normalized);
+  });
+  return kept
+    .join("\n")
+    .replace(
+      /(?:^|[.!?]\s+|\n)\s*(?:\*{0,2}|_{0,2})(?:regular price|exceptional price|special price|prix r[ée]gulier|prix exceptionnel)\s*:\s*(?:\*{0,2}|_{0,2})(?=\s*(?:\n|$|[A-Za-zÀ-ÿ]))/gi,
+      (match) => (match.startsWith("\n") ? "\n" : match.match(/^[.!?]/) ? match[0] + " " : "")
+    )
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 function stripMoneyAndFinancing(text: string): string {
-  let out = text;
-  out = out.replace(/\$\s*\d[\d,]*(?:\.\d{2})?/g, "");
+  let out = stripPriceDisclosure(text);
+  out = out.replace(/\$\s*\d[\d\s,]*(?:\.\d{2})?/g, "");
   out = out.replace(/\d[\d\s,]*(?:\.\d{2})?\s*(?:\$|CAD)\b/gi, "");
-  out = out.replace(
-    /(?:promo(?:tional)?|exceptional|special)\s+price[^.]*[.]?/gi,
-    ""
-  );
-  out = out.replace(/prix\s+(?:promo|exceptionnel|r[ée]gulier)[^.]*[.]?/gi, "");
   out = out.replace(
     /(?:including|with)\s+a?\s*\$?\s*\d[\d,]*\s*down payment[^.]*[.]?/gi,
     ""
@@ -264,8 +346,8 @@ function insertPriceBlock(
   french: boolean
 ): string {
   const id = french ? ODQ_IDENTIFICATION_FR : ODQ_IDENTIFICATION_EN;
-  const withoutId = caption.replace(id, "").trim();
-  const cleaned = stripMoneyAndFinancing(withoutId);
+  const withoutId = caption.split(id).join("").trim();
+  const cleaned = stripDanglingPriceLabels(stripPriceDisclosure(withoutId));
   return `${cleaned}\n\n${block}\n\n${id}`.trim();
 }
 
@@ -285,12 +367,7 @@ export function auditAndRepairOdqCopy(
     regularPrice: fromNotes.regularPrice || fromCopy.regularPrice,
     exceptionalPrice: fromNotes.exceptionalPrice || fromCopy.exceptionalPrice,
     expiryDate: fromNotes.expiryDate || fromCopy.expiryDate,
-    serviceNature:
-      fromNotes.serviceNature ||
-      fromCopy.serviceNature ||
-      (/\binvisalign\b/i.test(notes + collectText(ad))
-        ? "Invisalign clear aligner service"
-        : undefined),
+    serviceNature: fromNotes.serviceNature || fromCopy.serviceNature,
     materials: fromNotes.materials || fromCopy.materials,
     labIncluded: fromNotes.labIncluded || fromCopy.labIncluded,
     additionalNotIncluded:
@@ -303,7 +380,7 @@ export function auditAndRepairOdqCopy(
   const hasFinancing = FINANCING.test(blob);
   const promoIntent = Boolean(
     facts.exceptionalPrice ||
-      /promo|exceptional|special price|down payment|acompte/i.test(blob)
+      /(?:exceptional|special|promo(?:tional)?)\s+price:\s*\$?\s*\d/i.test(blob)
   );
 
   let priceMode: OdqAuditResult["priceMode"] = "none";
@@ -410,6 +487,8 @@ export function auditAndRepairOdqCopy(
   if (MONEY.test(after) && priceMode === "stripped") {
     next = mapFields(next, (t) => stripMoneyAndFinancing(t));
   }
+
+  next = mapFields(next, (t) => stripDanglingPriceLabels(t));
 
   return {
     ok: issues.length === 0,

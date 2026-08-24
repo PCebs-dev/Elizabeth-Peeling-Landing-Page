@@ -123,6 +123,12 @@ async function readResponseJson<T>(res: Response): Promise<T | null> {
   }
 }
 
+function videoGatewayTimeoutMessage(status: number, contentType?: string): string {
+  const kind = contentType?.split(";")[0]?.trim();
+  const extra = kind ? `, ${kind}` : "";
+  return `AI video generation timed out (${status}${extra}). The host stopped waiting before Higgsfield finished rendering — this is not a credits/keys error. Wait a minute and tap Generate video again (DoP often takes 3–8 minutes), or check the job in Higgsfield Cloud.`;
+}
+
 function studioFetchErrorMessage(err: unknown, fallbackStatus?: number): string {
   if (err instanceof DOMException && err.name === "AbortError") {
     return "Request was cancelled — try again.";
@@ -173,9 +179,15 @@ export function StudioApp() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [beforeMergeId, setBeforeMergeId] = useState<string | null>(null);
   const [afterMergeId, setAfterMergeId] = useState<string | null>(null);
-  const [mergePickSlot, setMergePickSlot] = useState<"before" | "after" | null>(
-    null
+  const [mergePickSlot, setMergePickSlot] = useState<
+    "before" | "after" | "video" | null
+  >(null);
+  const [videoStillSource, setVideoStillSource] = useState<"ai" | "library">(
+    "ai"
   );
+  const [videoStillId, setVideoStillId] = useState<string | null>(null);
+  const [videoMotionPrompt, setVideoMotionPrompt] = useState("");
+  const [videoMotionLoading, setVideoMotionLoading] = useState(false);
   const [mergeLoading, setMergeLoading] = useState(false);
   const [enhancingId, setEnhancingId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<StudioCategoryId>("invisalign");
@@ -214,6 +226,7 @@ export function StudioApp() {
   const [videoPrep, setVideoPrep] = useState<{
     photoId: string;
     script: string;
+    motionPrompt: string;
     /** Script / motion theme — defaults to the still, overridable for mix-and-match */
     categoryId: StudioCategoryId;
     /** Original still theme (for the override hint) */
@@ -484,13 +497,24 @@ export function StudioApp() {
           if (beforeMergeId === pickId) setBeforeMergeId(null);
         }
         setMergePickSlot(null);
+      } else if (mergePickSlot === "video") {
+        if (videoStillId === pickId) setVideoStillId(null);
+        else setVideoStillId(pickId);
+        setVideoStillSource("library");
+        setMergePickSlot(null);
       } else if (beforeMergeId === pickId) {
         setBeforeMergeId(null);
       } else if (afterMergeId === pickId) {
         setAfterMergeId(null);
+      } else if (videoStillId === pickId) {
+        setVideoStillId(null);
       }
     } else if (mergePickSlot) {
-      setError("Merge uses photos only, not videos");
+      setError(
+        mergePickSlot === "video"
+          ? "Video still must be a photo, not a clip"
+          : "Merge uses photos only, not videos"
+      );
       setMergePickSlot(null);
     }
 
@@ -1044,6 +1068,46 @@ export function StudioApp() {
     return { script: data.script, warning: data.warning };
   }
 
+  async function fetchVideoMotionPrompt(opts?: {
+    photoNote?: string;
+  }): Promise<string | null> {
+    const { notes } = parseOnImageTextLine(imageContext);
+    setVideoMotionLoading(true);
+    try {
+      const res = await fetch("/api/studio/generate-video-script", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          kind: "motion",
+          categoryId,
+          notes,
+          photoNote: opts?.photoNote || "",
+          tone: videoTone,
+          duration: videoDuration,
+        }),
+      });
+      const data = (await res.json()) as {
+        prompt?: string;
+        warning?: string;
+        error?: string;
+      };
+      if (!res.ok || !data.prompt) {
+        setError(data.error || "Could not write an animation prompt");
+        return null;
+      }
+      if (data.warning) {
+        setWarning((w) => [w, data.warning].filter(Boolean).join(" "));
+      }
+      setVideoMotionPrompt(data.prompt);
+      return data.prompt;
+    } catch (err) {
+      setError(studioFetchErrorMessage(err));
+      return null;
+    } finally {
+      setVideoMotionLoading(false);
+    }
+  }
+
   async function prepareAiVideo() {
     setError("");
     setWarning("");
@@ -1052,69 +1116,94 @@ export function StudioApp() {
       const { notes } = parseOnImageTextLine(imageContext);
       let photoId: string | null = null;
       let stillCategory: StudioCategoryId = categoryId;
-      const reusable =
-        selectedPhoto &&
-        selectedPhoto.mediaKind !== "video" &&
-        !selectedPhoto.mimeType.startsWith("video/") &&
-        !selectedPhoto.hasOnImageText
-          ? selectedPhoto
-          : null;
 
-      if (reusable) {
-        photoId = reusable.id;
-        stillCategory = reusable.categoryId;
-      } else {
-        if (selectedPhoto?.hasOnImageText) {
-          setWarning(
-            "Selected still has on-image text — creating a photo-only still for video prep."
-          );
-        }
-        const res = await fetch("/api/studio/generate-image", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            categoryId,
-            notes,
-            language: language === "fr" ? "fr" : "both",
-            channel,
-            subjectMode: "random",
-            withCaption: false,
-            bilingualPair: false,
-            includeOnImageText: false,
-          }),
-        });
-        const data = (await res.json()) as {
-          imageBase64?: string;
-          mimeType?: string;
-          promptSummary?: string;
-          warning?: string;
-          error?: string;
-        };
-        if (data.warning) {
-          setWarning((w) => [w, data.warning].filter(Boolean).join(" "));
-        }
-        if (!res.ok || !data.imageBase64) {
-          setError(data.error || "Could not create a still for video prep");
+      if (videoStillSource === "library") {
+        const libraryStill = photos.find((p) => p.id === videoStillId) || null;
+        const isClip =
+          libraryStill &&
+          (libraryStill.mediaKind === "video" ||
+            libraryStill.mimeType.startsWith("video/"));
+        if (!libraryStill || isClip) {
+          setError("Pick a library photo to animate, then Prepare AI video.");
           return;
         }
-        const saved = await addPhotoFromBase64({
-          categoryId,
-          base64: data.imageBase64,
-          mimeType: data.mimeType || "image/png",
-          name: `ai-video-still-${categoryId}-${Date.now()}.png`,
-          note: "Photo-only still for AI video (no on-image text)",
-          promptSummary: data.promptSummary,
-          hasOnImageText: false,
-        });
-        photoId = saved.id;
-        await refreshPhotos();
-        setSelectedId(saved.id);
-        clearSavedPreview();
+        photoId = libraryStill.id;
+        stillCategory = libraryStill.categoryId;
+      } else {
+        const reusableAiStill =
+          selectedPhoto &&
+          selectedPhoto.source === "ai" &&
+          selectedPhoto.mediaKind !== "video" &&
+          !selectedPhoto.mimeType.startsWith("video/") &&
+          !selectedPhoto.hasOnImageText
+            ? selectedPhoto
+            : null;
+
+        if (reusableAiStill) {
+          photoId = reusableAiStill.id;
+          stillCategory = reusableAiStill.categoryId;
+        } else {
+          if (selectedPhoto?.hasOnImageText) {
+            setWarning(
+              "Selected still has on-image text — creating a photo-only still for video prep."
+            );
+          }
+          const res = await fetch("/api/studio/generate-image", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              categoryId,
+              notes,
+              language: language === "fr" ? "fr" : "both",
+              channel,
+              subjectMode: "random",
+              withCaption: false,
+              bilingualPair: false,
+              includeOnImageText: false,
+            }),
+          });
+          const data = (await res.json()) as {
+            imageBase64?: string;
+            mimeType?: string;
+            promptSummary?: string;
+            warning?: string;
+            error?: string;
+          };
+          if (data.warning) {
+            setWarning((w) => [w, data.warning].filter(Boolean).join(" "));
+          }
+          if (!res.ok || !data.imageBase64) {
+            setError(data.error || "Could not create a still for video prep");
+            return;
+          }
+          const saved = await addPhotoFromBase64({
+            categoryId,
+            base64: data.imageBase64,
+            mimeType: data.mimeType || "image/png",
+            name: `ai-video-still-${categoryId}-${Date.now()}.png`,
+            note: "Photo-only still for AI video (no on-image text)",
+            promptSummary: data.promptSummary,
+            hasOnImageText: false,
+          });
+          photoId = saved.id;
+          await refreshPhotos();
+          setSelectedId(saved.id);
+          clearSavedPreview();
+        }
       }
 
       if (!photoId) {
         setError("No still available for video prep");
         return;
+      }
+
+      const stillForMotion = photos.find((p) => p.id === photoId);
+      let motion = videoMotionPrompt.trim();
+      if (!motion) {
+        motion =
+          (await fetchVideoMotionPrompt({
+            photoNote: stillForMotion?.note || stillForMotion?.name,
+          })) || "";
       }
 
       setScriptLoading(true);
@@ -1135,13 +1224,14 @@ export function StudioApp() {
       setVideoPrep({
         photoId,
         script: scriptResult.script,
+        motionPrompt: motion || videoMotionPrompt,
         categoryId: stillCategory,
         mediaCategoryId: stillCategory,
       });
       setWarning((w) =>
         [
           w,
-          "Video prep ready — review the still and spoken script below, then generate the clip.",
+          "Video prep ready — review the still, animation prompt, and spoken script, then generate the clip.",
         ]
           .filter(Boolean)
           .join(" ")
@@ -1274,7 +1364,10 @@ export function StudioApp() {
 
       const form = new FormData();
       form.append("categoryId", videoPrep.categoryId || categoryId);
-      form.append("notes", notes);
+      form.append(
+        "notes",
+        videoPrep.motionPrompt.trim() || videoMotionPrompt.trim() || notes
+      );
       form.append("subjectMode", "random");
       form.append("tone", videoTone);
       form.append("duration", String(videoDuration));
@@ -1369,9 +1462,11 @@ export function StudioApp() {
 
       if (!data) {
         setError(
-          `AI video generation failed (${res.status}${
-            contentType ? `, ${contentType.split(";")[0]}` : ""
-          }). The clip was not saved — check Higgsfield credits/keys and try again.`
+          res.status === 504 || res.status === 524 || res.status === 502
+            ? videoGatewayTimeoutMessage(res.status, contentType)
+            : `AI video generation failed (${res.status}${
+                contentType ? `, ${contentType.split(";")[0]}` : ""
+              }). The clip was not saved — check Higgsfield credits/keys and try again.`
         );
         return;
       }
@@ -1434,7 +1529,9 @@ export function StudioApp() {
 
       setError(
         data.error ||
-          `AI video generation failed (${res.status}). The clip was not saved — check Higgsfield credits/keys and try again.`
+          (res.status === 504 || res.status === 524 || res.status === 502
+            ? videoGatewayTimeoutMessage(res.status)
+            : `AI video generation failed (${res.status}). The clip was not saved — check Higgsfield credits/keys and try again.`)
       );
       if (data.motionPrompt) {
         const copied = await copyToClipboard(data.motionPrompt);
@@ -2048,6 +2145,7 @@ export function StudioApp() {
             beforeMergeId={beforeMergeId}
             afterMergeId={afterMergeId}
             mergePickSlot={mergePickSlot}
+            videoStillId={videoStillId}
             categories={STUDIO_CATEGORIES}
             onUpload={handleUpload}
             onSelect={selectPhoto}
@@ -2136,6 +2234,11 @@ export function StudioApp() {
                 setMergePickSlot(null);
                 return;
               }
+              if (slot === "video" && videoStillId) {
+                setVideoStillId(null);
+                setMergePickSlot(null);
+                return;
+              }
               if (mergePickSlot === slot) {
                 setMergePickSlot(null);
               } else {
@@ -2159,6 +2262,35 @@ export function StudioApp() {
               setAfterMergeId(null);
               if (mergePickSlot === "after") setMergePickSlot(null);
             }}
+            videoStillSource={videoStillSource}
+            onVideoStillSourceChange={(source) => {
+              setVideoStillSource(source);
+              if (source === "library") {
+                setMergePickSlot("video");
+                document
+                  .getElementById("studio-media-library")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              } else if (mergePickSlot === "video") {
+                setMergePickSlot(null);
+              }
+            }}
+            videoStillPreviewUrl={
+              photos.find((p) => p.id === videoStillId)?.previewUrl ?? null
+            }
+            videoStillPickActive={mergePickSlot === "video"}
+            onClearVideoStill={() => {
+              setVideoStillId(null);
+              if (mergePickSlot === "video") setMergePickSlot(null);
+            }}
+            videoMotionPrompt={videoMotionPrompt}
+            onVideoMotionPromptChange={setVideoMotionPrompt}
+            onGenerateVideoMotionPrompt={() => {
+              const still = photos.find((p) => p.id === videoStillId);
+              void fetchVideoMotionPrompt({
+                photoNote: still?.note || still?.name,
+              });
+            }}
+            videoMotionLoading={videoMotionLoading}
             videoLoading={videoLoading}
             videoPrepLoading={videoPrepLoading}
             videoPrepActive={Boolean(videoPrep)}
@@ -2193,6 +2325,24 @@ export function StudioApp() {
               error={error}
               warning={warning}
               higgsfieldUrl={higgsfieldFallbackUrl}
+              motionPrompt={videoPrep.motionPrompt}
+              motionPromptLoading={videoMotionLoading}
+              onMotionPromptChange={(value) => {
+                setVideoMotionPrompt(value);
+                setVideoPrep({ ...videoPrep, motionPrompt: value });
+              }}
+              onRegenerateMotionPrompt={() => {
+                const still = photos.find((p) => p.id === videoPrep.photoId);
+                void fetchVideoMotionPrompt({
+                  photoNote: still?.note || still?.name,
+                }).then((prompt) => {
+                  if (prompt) {
+                    setVideoPrep((prev) =>
+                      prev ? { ...prev, motionPrompt: prompt } : prev
+                    );
+                  }
+                });
+              }}
               onScriptChange={(script) =>
                 setVideoPrep({ ...videoPrep, script })
               }

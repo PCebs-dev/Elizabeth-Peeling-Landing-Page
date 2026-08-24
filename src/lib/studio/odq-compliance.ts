@@ -305,7 +305,6 @@ export function applyOdqCompliance(ad: GeneratedAdCopy): {
       next.disclaimer,
       `${EN_PRICE_DISCLAIMER} Regular advertised fees remain in effect at least 90 days after last publication.`
     );
-    next.disclaimer = mergeDisclaimer(next.disclaimer, ODQ_IDENTIFICATION_EN);
     if (next.fr) {
       next.fr = {
         ...next.fr,
@@ -314,10 +313,6 @@ export function applyOdqCompliance(ad: GeneratedAdCopy): {
           `${FR_PRICE_DISCLAIMER} Les tarifs reguliers annonces demeurent en vigueur au moins 90 jours apres la derniere publication.`
         ),
       };
-      next.fr.disclaimer = mergeDisclaimer(
-        next.fr.disclaimer,
-        ODQ_IDENTIFICATION_FR
-      );
     }
   }
 

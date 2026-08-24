@@ -43,6 +43,22 @@ export function sanitizeHumanText(input: string): string {
     "With $1"
   );
 
+  // Drop leftover ODQ labels with no value (e.g. a lone "Regular price:")
+  text = text
+    .split("\n")
+    .filter((line) => {
+      const n = line
+        .replace(/[\u200B-\u200D\uFEFF\u00A0]/g, " ")
+        .replace(/[*_`#]+/g, "")
+        .replace(/^[\s>*•·\-–—\d.)]+/, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      return !/^(regular price|exceptional price|special price|prix r[ée]gulier|prix exceptionnel)\s*:?\s*$/i.test(
+        n
+      );
+    })
+    .join("\n");
+
   // Collapse messy whitespace left by removals (preserve newlines)
   text = text
     .split("\n")
