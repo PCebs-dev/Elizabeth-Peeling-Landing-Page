@@ -147,8 +147,9 @@ ${langInstruction}
 
 Always name the practice naturally (e.g. "with Dr. Elizabeth Peeling at Clinique LE 32" / "avec Dre Elizabeth Peeling à Clinique LE 32") in the caption or CTA when natural. Never use "At Dr. … at Clinique…".
 Write complete sentences only — do not truncate captions mid-word.
-If the caption prompt includes a promo or price, include those figures exactly. Add examination-required language in the disclaimer field, not as scare-copy in the body.
-Think through ODQ advertising rules before you write. If a line would violate them, rewrite it.
+If the caption prompt includes a promo or price, you may use those figures ONLY if the prompt also supplies, labeled: regular price, exceptional price (if promo), expiry date (if promo), nature of the service, materials, whether lab/other services are included, and additional services not included. If any of those 3.09.07 fields are missing, write the caption with ZERO dollar amounts, ZERO down payments, and ZERO financing lines. Keep the rest of the practitioner prompt (theme, service, CTA). Never invent a regular price or expiry.
+Never mention Beautifi/Beautifi, APR, or "financing may be available" unless the prompt contains a complete cost-of-credit disclosure (it almost never will — omit financing).
+Think through Code de déontologie 3.09.01–3.09.11 before you write. If a line would violate them, rewrite it.
 ${avoid}
 
 Return JSON with this shape:

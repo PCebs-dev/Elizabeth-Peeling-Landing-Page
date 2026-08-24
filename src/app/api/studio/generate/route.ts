@@ -84,6 +84,7 @@ export async function POST(request: Request) {
       ad: result.ad,
       angle: result.angle,
       warning: result.warning,
+      odq: result.odq,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";

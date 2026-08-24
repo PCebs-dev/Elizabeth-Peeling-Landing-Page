@@ -5,6 +5,11 @@ import {
   pickRandomAngle,
 } from "./prompt";
 import { applyOdqCompliance } from "./odq-compliance";
+import {
+  auditAndRepairOdqCopy,
+  summarizeOdqAudit,
+  type OdqAuditResult,
+} from "./odq-verify";
 import { sanitizeAdCopy } from "./sanitize-copy";
 import { STUDIO_CLINIC } from "./targeting";
 import type { GenerateRequest, GeneratedAdCopy } from "./types";
@@ -51,7 +56,18 @@ async function callOpenAICopy(
     throw new Error("Incomplete ad JSON from model");
   }
   if (!Array.isArray(parsed.hashtags)) parsed.hashtags = [];
-  return applyOdqCompliance(sanitizeAdCopy(parsed)).ad;
+  return parsed;
+}
+
+function finalizeCopy(ad: GeneratedAdCopy, notes: string): {
+  ad: GeneratedAdCopy;
+  warning?: string;
+  odq: OdqAuditResult;
+} {
+  const first = applyOdqCompliance(sanitizeAdCopy(ad)).ad;
+  const odq = auditAndRepairOdqCopy(first, notes);
+  const warning = summarizeOdqAudit(odq);
+  return { ad: odq.ad, warning: warning || undefined, odq };
 }
 
 /** Template fallback when no API key — still varies by angle */
@@ -71,7 +87,7 @@ export function fallbackAd(
     "myth-bust": `Myth: ${label} is only for "perfect" candidates. Reality: a consult with ${brand} tells you what's possible.`,
     "local-trust": `${label} care, close to home with ${brand}.`,
     seasonal: `New season, new smile energy - explore ${label} with ${brand}.`,
-    "financing-friendly": `Love the idea of ${label}? Ask ${brand} about Beautifi financing options.`,
+    "financing-friendly": `Love the idea of ${label}? Ask ${brand} about payment options discussed at a consult.`,
     confidence: `The best accessory? A smile you actually want to show - ${brand} can help you explore ${label}.`,
     "behind-the-scenes": `Gentle, modern ${label} care with ${brand}.`,
     "question-hook": `Still putting off ${label}? Ask ${brand} the one question on your mind.`,
@@ -152,12 +168,17 @@ export function fallbackAd(
     };
   }
 
-  return applyOdqCompliance(sanitizeAdCopy(base)).ad;
+  return finalizeCopy(base, req.notes).ad;
 }
 
 export async function generateAdCopy(
   req: GenerateRequest
-): Promise<{ ad: GeneratedAdCopy; angle: string; warning?: string }> {
+): Promise<{
+  ad: GeneratedAdCopy;
+  angle: string;
+  warning?: string;
+  odq?: OdqAuditResult;
+}> {
   const angle = pickRandomAngle(req.avoidAngles);
 
   if (!process.env.OPENAI_API_KEY) {
@@ -169,12 +190,18 @@ export async function generateAdCopy(
   }
 
   try {
-    const ad = await callOpenAICopy(
+    const raw = await callOpenAICopy(
       buildSystemPrompt(),
       buildUserPrompt(req, angle)
     );
-    ad.angle = ad.angle || angle;
-    return { ad: applyOdqCompliance(sanitizeAdCopy(ad)).ad, angle: ad.angle };
+    raw.angle = raw.angle || angle;
+    const done = finalizeCopy(raw, req.notes);
+    return {
+      ad: done.ad,
+      angle: raw.angle,
+      warning: done.warning,
+      odq: done.odq,
+    };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Generation failed";
     const useFallback =

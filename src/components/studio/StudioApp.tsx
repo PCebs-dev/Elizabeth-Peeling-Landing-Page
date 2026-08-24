@@ -218,6 +218,12 @@ export function StudioApp() {
   const [publishLoading, setPublishLoading] = useState(false);
   const [error, setError] = useState("");
   const [warning, setWarning] = useState("");
+  const [odqAudit, setOdqAudit] = useState<{
+    ok: boolean;
+    issues: { article: string; message: string }[];
+    repairs: string[];
+    priceMode: string;
+  } | null>(null);
   const [higgsfieldFallbackUrl, setHiggsfieldFallbackUrl] = useState("");
   const [history, setHistory] = useState<GeneratedAd[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -616,6 +622,7 @@ export function StudioApp() {
   async function generateAdFromPhoto() {
     setError("");
     setWarning("");
+    setOdqAudit(null);
 
     if (!selectedPhoto) {
       setError(
@@ -668,6 +675,12 @@ export function StudioApp() {
         ad?: GeneratedAdCopy;
         warning?: string;
         error?: string;
+        odq?: {
+          ok: boolean;
+          issues: { article: string; message: string }[];
+          repairs: string[];
+          priceMode: string;
+        };
       };
 
       if (!res.ok || !data.ad) {
@@ -676,6 +689,7 @@ export function StudioApp() {
       }
 
       if (data.warning) setWarning(data.warning);
+      if (data.odq) setOdqAudit(data.odq);
 
       let photoIdFr: string | undefined;
       const selectedIsVideo =
@@ -2252,6 +2266,9 @@ export function StudioApp() {
                   discardAd(activeAd.id);
                 }
               }}
+              captionNotes={captionPrompt}
+              odqAudit={odqAudit}
+              onOdqAudit={setOdqAudit}
             />
           ) : (
             <div className="rounded-2xl border border-dashed border-[rgb(var(--brand-300))] bg-white/60 px-6 py-10 text-center text-sm text-[rgb(var(--brand-600))]">

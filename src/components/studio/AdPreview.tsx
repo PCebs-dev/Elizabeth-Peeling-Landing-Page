@@ -1,6 +1,7 @@
 "use client";
 
 import { links } from "@/config/links";
+import { auditAndRepairOdqCopy } from "@/lib/studio/odq-verify";
 import type {
   GeneratedAd,
   StudioLanguage,
@@ -19,6 +20,19 @@ interface AdPreviewProps {
   onSaveProposed?: () => void;
   saveBusy?: boolean;
   alreadySaved?: boolean;
+  captionNotes?: string;
+  odqAudit?: {
+    ok: boolean;
+    issues: { article: string; message: string }[];
+    repairs: string[];
+    priceMode: string;
+  } | null;
+  onOdqAudit?: (audit: {
+    ok: boolean;
+    issues: { article: string; message: string }[];
+    repairs: string[];
+    priceMode: string;
+  }) => void;
 }
 
 /** Soft preview truncate at a word boundary (full caption stays editable above). */
@@ -40,6 +54,9 @@ export function AdPreview({
   onSaveProposed,
   saveBusy = false,
   alreadySaved = false,
+  captionNotes = "",
+  odqAudit = null,
+  onOdqAudit,
 }: AdPreviewProps) {
   const showFr = Boolean(ad.fr) && (language === "fr" || language === "both");
   const showEn = language === "en" || language === "both" || !ad.fr;
@@ -212,17 +229,58 @@ export function AdPreview({
         </p>
       )}
       <div className="rounded-xl border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-4 py-3 text-[11px] leading-relaxed text-[rgb(var(--brand-700))]">
-        <p className="font-semibold text-[rgb(var(--brand-900))]">
-          Code de déontologie (ODQ)
-        </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <p className="font-semibold text-[rgb(var(--brand-900))]">
+            Code de déontologie (ODQ) — second check
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              const audit = auditAndRepairOdqCopy(ad, captionNotes);
+              onAdChange({ ...ad, ...audit.ad });
+              onOdqAudit?.({
+                ok: audit.ok,
+                issues: audit.issues,
+                repairs: audit.repairs,
+                priceMode: audit.priceMode,
+              });
+            }}
+            className="min-h-9 rounded-md border border-[rgb(var(--brand-300))] bg-white px-2.5 py-1 text-[11px] font-medium text-[rgb(var(--brand-800))] hover:bg-white"
+          >
+            Re-check and repair
+          </button>
+        </div>
         <p className="mt-1">
-          Captions must identify Dr. Elizabeth Peeling, D.M.D., as a general
-          dentist (dentiste généraliste) with clinic coordinates. No
-          testimonials, no comparisons, no guaranteed results. If a regular
-          price and an exceptional price both appear on the image or in copy,
-          they must use the same font, size, and weight — never a larger sale
-          price.
+          Price ads must list only the 3.09.07 closed set: regular price,
+          exceptional price plus expiry if a promo, nature of the service,
+          materials, lab/other services included, and extras not included. Both
+          prices the same type size. Incomplete promos are stripped, not
+          guessed. No testimonials, comparisons, specialty titles, or vague
+          financing.
         </p>
+        {odqAudit ? (
+          <ul className="mt-2 list-disc space-y-1 pl-4">
+            <li>
+              Status: {odqAudit.ok ? "No remaining flags" : "Repaired or flagged"}
+              {odqAudit.priceMode !== "none"
+                ? ` · price mode: ${odqAudit.priceMode}`
+                : ""}
+            </li>
+            {odqAudit.issues.map((issue) => (
+              <li key={issue.article + issue.message}>
+                {issue.article} — {issue.message}
+              </li>
+            ))}
+            {odqAudit.repairs.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2">
+            Generate a caption to run the automatic gate, or tap Re-check after
+            edits.
+          </p>
+        )}
       </div>
 
       {ad.channel === "paid" && ad.paid ? (

@@ -104,7 +104,7 @@ export function CaptionPanel({
           rows={5}
           disabled={busy}
           placeholder={
-            "Optional: add promo pricing or a direction before generating.\nExample: Spring whitening $249, exam required, offer until May 31."
+            "Optional direction (woven in, then ODQ-checked).\nPromo example — all of these labels are required or prices are stripped:\nRegular price: $X\nExceptional price: $Y\nExpiry date: YYYY-MM-DD\nService: ...\nMaterials: ...\nLaboratory: included/not included\nAdditional services: ..."
           }
           className="mt-1.5 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-3 py-2.5 text-base text-[rgb(var(--brand-950))] sm:text-sm"
         />
