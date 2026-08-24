@@ -26,6 +26,7 @@ import {
 import {
   effectiveCaptionPrompt,
   randomCaptionPrompt,
+  randomOdqPricePrompt,
 } from "@/lib/studio/caption-prompt";
 import { pickShortOnImageHeadline } from "@/lib/studio/image-prompt";
 import { stripHashtagsFromCaption } from "@/lib/studio/sanitize-copy";
@@ -2251,6 +2252,9 @@ export function StudioApp() {
             onCaptionPromptChange={setCaptionPrompt}
             onRandomizeCaptionPrompt={() =>
               setCaptionPrompt(randomCaptionPrompt(captionCategoryId))
+            }
+            onRandomizeOdqPrice={() =>
+              setCaptionPrompt(randomOdqPricePrompt(captionCategoryId))
             }
             onGenerateAd={() => void generateAdFromPhoto()}
           />

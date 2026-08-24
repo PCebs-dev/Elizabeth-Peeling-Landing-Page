@@ -25,6 +25,7 @@ interface CaptionPanelProps {
   captionPrompt: string;
   onCaptionPromptChange: (value: string) => void;
   onRandomizeCaptionPrompt: () => void;
+  onRandomizeOdqPrice: () => void;
   onGenerateAd: () => void;
 }
 
@@ -47,6 +48,7 @@ export function CaptionPanel({
   captionPrompt,
   onCaptionPromptChange,
   onRandomizeCaptionPrompt,
+  onRandomizeOdqPrice,
   onGenerateAd,
 }: CaptionPanelProps) {
   const busy = loading || aiLoading || publishLoading;
@@ -117,11 +119,19 @@ export function CaptionPanel({
         >
           Random prompt
         </button>
+        <button
+          type="button"
+          onClick={onRandomizeOdqPrice}
+          disabled={busy}
+          className="min-h-10 rounded-md border border-[rgb(var(--brand-300))] bg-white px-3 py-1.5 text-xs font-medium text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-100))] disabled:opacity-60"
+        >
+          Random price (ODQ)
+        </button>
         <p className="text-[11px] leading-snug text-[rgb(var(--brand-600))]">
-          AI still writes the caption. Leave this gray hint as-is for a random
-          caption in the selected theme (Invisalign, implants, …). Type over it
-          to steer the post. Every caption is written and checked against the
-          Code de déontologie des dentistes (ODQ).
+          AI still writes the caption. Leave the gray hint as-is for a random
+          caption in the selected theme. Random price (ODQ) fills draft regular
+          / exceptional fees and the other 3.09.07 labels - edit them before
+          you publish (an advertised regular fee must hold 90 days).
         </p>
       </div>
 
