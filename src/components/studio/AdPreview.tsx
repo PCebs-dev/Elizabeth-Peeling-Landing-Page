@@ -2,6 +2,7 @@
 
 import { links } from "@/config/links";
 import { auditAndRepairOdqCopy } from "@/lib/studio/odq-verify";
+import { withClinicBookingLink } from "@/lib/studio/targeting";
 import type {
   GeneratedAd,
   StudioLanguage,
@@ -131,6 +132,7 @@ export function AdPreview({
               headline={ad.headline}
               caption={ad.caption}
               cta={ad.cta}
+              ctaHref={links.booking}
               lockCaptionHeight
             />
           </PhoneFrame>
@@ -141,6 +143,7 @@ export function AdPreview({
               headline={ad.fr.headline}
               caption={ad.fr.caption}
               cta={ad.fr.cta}
+              ctaHref={links.bookingFr}
               lockCaptionHeight
             />
           </PhoneFrame>
@@ -154,6 +157,9 @@ export function AdPreview({
               headline={previewHeadline}
               caption={previewCaption}
               cta={previewCta}
+              ctaHref={
+                language === "fr" && ad.fr ? links.bookingFr : links.booking
+              }
             />
           </PhoneFrame>
 
@@ -168,6 +174,9 @@ export function AdPreview({
                   : ad.paid?.primaryText || ad.caption
               }
               cta={previewCta}
+              ctaHref={
+                language === "fr" && ad.fr ? links.bookingFr : links.booking
+              }
               isPaid={ad.channel === "paid"}
               paidHeadline={
                 language === "fr" && ad.fr?.paid
@@ -201,6 +210,7 @@ export function AdPreview({
             headline={ad.headline}
             caption={ad.caption}
             cta={ad.cta}
+            ctaHref={links.booking}
             onHeadline={(v) => updateEn("headline", v)}
             onCaption={(v) => updateEn("caption", v)}
             onCta={(v) => updateEn("cta", v)}
@@ -213,6 +223,7 @@ export function AdPreview({
             headline={ad.fr.headline}
             caption={ad.fr.caption}
             cta={ad.fr.cta}
+            ctaHref={links.bookingFr}
             onHeadline={(v) => updateFr("headline", v)}
             onCaption={(v) => updateFr("caption", v)}
             onCta={(v) => updateFr("cta", v)}
@@ -237,7 +248,26 @@ export function AdPreview({
             type="button"
             onClick={() => {
               const audit = auditAndRepairOdqCopy(ad, captionNotes);
-              onAdChange({ ...ad, ...audit.ad });
+              const repaired = audit.ad;
+              onAdChange({
+                ...ad,
+                ...repaired,
+                caption: withClinicBookingLink(
+                  repaired.caption,
+                  repaired.cta,
+                  false
+                ),
+                fr: repaired.fr
+                  ? {
+                      ...repaired.fr,
+                      caption: withClinicBookingLink(
+                        repaired.fr.caption,
+                        repaired.fr.cta,
+                        true
+                      ),
+                    }
+                  : repaired.fr,
+              });
               onOdqAudit?.({
                 ok: audit.ok,
                 issues: audit.issues,
@@ -322,6 +352,7 @@ function EditableCaption({
   headline,
   caption,
   cta,
+  ctaHref,
   onHeadline,
   onCaption,
   onCta,
@@ -330,6 +361,7 @@ function EditableCaption({
   headline: string;
   caption: string;
   cta: string;
+  ctaHref: string;
   onHeadline: (v: string) => void;
   onCaption: (v: string) => void;
   onCta: (v: string) => void;
@@ -365,6 +397,18 @@ function EditableCaption({
           onChange={(e) => onCta(e.target.value)}
           className="mt-1 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-3 py-2 text-sm text-[rgb(var(--brand-950))]"
         />
+        <p className="mt-1 text-[11px] leading-snug text-[rgb(var(--brand-700))]">
+          Instagram captions use “link in bio”. Set the clinic Instagram bio to{" "}
+          <a
+            href={ctaHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline underline-offset-2"
+          >
+            {ctaHref.replace(/^https:\/\//, "")}
+          </a>
+          . Facebook posts include that URL.
+        </p>
       </label>
     </div>
   );
@@ -431,6 +475,7 @@ function IgPost({
   headline,
   caption,
   cta,
+  ctaHref,
   lockCaptionHeight = false,
 }: {
   mediaUrl?: string;
@@ -438,6 +483,7 @@ function IgPost({
   headline: string;
   caption: string;
   cta: string;
+  ctaHref: string;
   /** Keep EN/FR phone frames the same height in dual preview */
   lockCaptionHeight?: boolean;
 }) {
@@ -467,7 +513,14 @@ function IgPost({
           {previewTruncate(caption, lockCaptionHeight ? 160 : 280)}
         </p>
         <p className="truncate font-medium text-[rgb(var(--brand-700))]">
-          {cta}
+          <a
+            href={ctaHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {cta}
+          </a>
         </p>
       </div>
     </div>
@@ -480,6 +533,7 @@ function FbPost({
   headline,
   caption,
   cta,
+  ctaHref,
   isPaid,
   paidHeadline,
   paidDescription,
@@ -489,6 +543,7 @@ function FbPost({
   headline: string;
   caption: string;
   cta: string;
+  ctaHref: string;
   isPaid: boolean;
   paidHeadline?: string;
   paidDescription?: string;
@@ -515,21 +570,31 @@ function FbPost({
         />
       </div>
       {isPaid ? (
-        <div className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50 px-3 py-2">
+        <a
+          href={ctaHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between border-t border-neutral-100 bg-neutral-50 px-3 py-2"
+        >
           <div>
-            <p className="text-[10px] uppercase text-neutral-500">
-              elizabethpeeling.ca
-            </p>
+            <p className="text-[10px] uppercase text-neutral-500">le32.ca</p>
             <p className="font-semibold">{paidHeadline || headline}</p>
             <p className="text-neutral-600">{paidDescription || cta}</p>
           </div>
           <span className="rounded bg-neutral-200 px-2 py-1 text-[10px] font-semibold">
-            Learn more
+            Book
           </span>
-        </div>
+        </a>
       ) : (
         <div className="border-t border-neutral-100 px-3 py-2 font-medium text-[rgb(var(--brand-700))]">
-          {cta}
+          <a
+            href={ctaHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2"
+          >
+            {cta}
+          </a>
         </div>
       )}
     </div>

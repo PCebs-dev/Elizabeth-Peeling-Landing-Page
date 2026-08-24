@@ -11,7 +11,7 @@ import {
   type OdqAuditResult,
 } from "./odq-verify";
 import { sanitizeAdCopy } from "./sanitize-copy";
-import { STUDIO_CLINIC } from "./targeting";
+import { STUDIO_CLINIC, withClinicBookingLink } from "./targeting";
 import type { GenerateRequest, GeneratedAdCopy } from "./types";
 
 async function callOpenAICopy(
@@ -66,8 +66,23 @@ function finalizeCopy(ad: GeneratedAdCopy, notes: string): {
 } {
   const first = applyOdqCompliance(sanitizeAdCopy(ad)).ad;
   const odq = auditAndRepairOdqCopy(first, notes);
+  const repaired = odq.ad;
+  const adWithBooking: GeneratedAdCopy = {
+    ...repaired,
+    caption: withClinicBookingLink(repaired.caption, repaired.cta, false),
+    fr: repaired.fr
+      ? {
+          ...repaired.fr,
+          caption: withClinicBookingLink(
+            repaired.fr.caption,
+            repaired.fr.cta,
+            true
+          ),
+        }
+      : repaired.fr,
+  };
   const warning = summarizeOdqAudit(odq);
-  return { ad: odq.ad, warning: warning || undefined, odq };
+  return { ad: adWithBooking, warning: warning || undefined, odq };
 }
 
 /** Template fallback when no API key — still varies by angle */
@@ -118,7 +133,7 @@ export function fallbackAd(
       "SmileGoals",
       "MontrealDentists",
     ],
-    cta: "Book a consult",
+    cta: "Book at Clinique LE 32 - link in bio",
     disclaimer:
       "Results vary. Not medical advice - suitability determined in clinic.",
     angle,
@@ -155,7 +170,7 @@ export function fallbackAd(
         "CliniqueLE32",
         "OuestDeLIle",
       ],
-      cta: "Prendre rendez-vous",
+      cta: "Prenez rendez-vous - lien dans la bio",
       disclaimer: "Les résultats varient. Ceci n'est pas un avis médical.",
       paid:
         req.channel === "paid"
@@ -182,10 +197,12 @@ export async function generateAdCopy(
   const angle = pickRandomAngle(req.avoidAngles);
 
   if (!process.env.OPENAI_API_KEY) {
+    const done = finalizeCopy(fallbackAd(req, angle), req.notes);
     return {
-      ad: fallbackAd(req, angle),
+      ad: done.ad,
       angle,
       warning: "OPENAI_API_KEY missing - used local template variation.",
+      odq: done.odq,
     };
   }
 
@@ -216,12 +233,14 @@ export async function generateAdCopy(
         message.includes("429") ||
         message.includes("insufficient_quota") ||
         message.includes("credit_balance_exhausted");
+      const done = finalizeCopy(fallbackAd(req, angle), req.notes);
       return {
-        ad: fallbackAd(req, angle),
+        ad: done.ad,
         angle,
         warning: quotaIssue
           ? "OpenAI has no credits remaining - used a local caption template. Add billing at platform.openai.com to enable AI-written copy and AI images."
           : "OpenAI unavailable - used local template variation.",
+        odq: done.odq,
       };
     }
     throw err;

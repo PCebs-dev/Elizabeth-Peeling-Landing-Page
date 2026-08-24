@@ -59,7 +59,7 @@ Practice:
 - Location: ${STUDIO_CLINIC.address.city}, ${STUDIO_CLINIC.address.province}
 - Phone: ${STUDIO_CLINIC.phoneDisplay}
 - Instagram: ${STUDIO_CLINIC.instagram}
-- Booking: ${STUDIO_CLINIC.bookingUrl}
+- Booking: ${STUDIO_CLINIC.bookingUrl} (English) / ${STUDIO_CLINIC.bookingUrlFr} (French)
 - Smile simulation (Invisalign): ${STUDIO_CLINIC.smileViewUrl}
 - Financing: Beautifi may be available
 
@@ -76,7 +76,7 @@ Rules:
 - Never diagnose or promise results. Include a short disclaimer when claims could be read as outcome guarantees.
 - Captions and shortCaptions must be complete, grammatical sentences — never cut off mid-word or mid-phrase.
 - Do NOT put hashtags in caption, shortCaption, or paid primaryText. Instagram and Facebook captions are plain sentences only. Put tags only in the hashtags JSON array (optional; they will not be posted).
-- CTAs should point to booking a consult, calling, or SmileView when relevant to Invisalign.
+- Instagram CTAs must send people to book at Clinique LE 32 via "link in bio" / French "lien dans la bio". Do not paste a booking URL in the Instagram caption (links in IG captions are not a reliable tap target). Facebook captions may include the LE 32 contact URL; the studio attaches it when publishing to Facebook.
 - French must be Quebec-friendly (vous, natural phrasing), not overly formal European French.
 - In French myth-bust copy, always write "Mythe :" — never leave the English word "Myth" in headlines or captions.
 - Vary structure every time: hooks and line breaks are fine; zero emojis.

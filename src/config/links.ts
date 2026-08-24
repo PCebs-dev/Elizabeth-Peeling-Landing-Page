@@ -3,7 +3,7 @@
  */
 export const links = {
   booking: "https://www.le32.ca/en/contact-us",
-  bookingFr: "https://www.le32.ca/en/contact-us",
+  bookingFr: "https://www.le32.ca/fr/nous-contacter",
   phone: "tel:+14504245332",
   phoneDisplay: "(450) 424-5332",
   email: "mailto:info@le32.ca",

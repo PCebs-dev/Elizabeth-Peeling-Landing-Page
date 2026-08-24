@@ -12,6 +12,7 @@ export const STUDIO_CLINIC = {
   phoneDisplay: links.phoneDisplay,
   phoneE164: "+14504245332",
   bookingUrl: links.booking,
+  bookingUrlFr: links.bookingFr,
   smileViewUrl: links.smileSimulation,
   financingNote: "Beautifi financing available",
   financingNoteFr: "Financement Beautifi disponible",
@@ -70,7 +71,7 @@ export function buildMetaTargetingBrief(
       "Add detailed targeting interests from the list below (or use Advantage+ and let Meta optimize)",
       "Upload your selected photo(s) as the creative",
       "Paste primary text, headline, and description from the export",
-      "Set destination URL to the landing page or booking link with UTMs",
+      "Set destination URL to the LE 32 reservation page (le32.ca contact / appointment request) with UTMs",
       "Start with a modest daily budget ($15–$40 CAD) and review after 3–5 days",
       "Add French creative if you selected bilingual output",
     ],
@@ -87,4 +88,56 @@ export function utmUrl(
   url.searchParams.set("utm_campaign", opts.campaign);
   url.searchParams.set("utm_content", opts.content);
   return url.toString();
+}
+
+const BOOKING_URL_RE =
+  /le32\.ca\/(?:en\/contact-us|fr\/nous-contacter)/i;
+
+const LINK_IN_BIO_RE = /link in bio|lien dans la bio/i;
+
+export function clinicBookingUrl(french: boolean): string {
+  return french ? links.bookingFr : links.booking;
+}
+
+export function instagramLinkInBioLine(french: boolean): string {
+  return french
+    ? "Prenez rendez-vous à la Clinique LE 32 - lien dans la bio."
+    : "Book at Clinique LE 32 - link in bio.";
+}
+
+function stripBookingUrls(caption: string): string {
+  return caption
+    .replace(
+      /\n*https?:\/\/(?:www\.)?le32\.ca\/(?:en\/contact-us|fr\/nous-contacter)\S*/gi,
+      ""
+    )
+    .trim();
+}
+
+/**
+ * Instagram feed captions do not have a tappable booking button, so organic IG
+ * copy uses "link in bio". Facebook captions also get the live LE 32 URL.
+ */
+export function withClinicBookingLink(
+  caption: string,
+  cta: string,
+  french: boolean,
+  opts?: { forFacebook?: boolean }
+): string {
+  let body = stripBookingUrls(caption.trim());
+  const url = clinicBookingUrl(french);
+
+  if (opts?.forFacebook) {
+    const ctaLine = (
+      cta.trim() ||
+      (french ? "Prendre rendez-vous" : "Book your consultation")
+    ).trim();
+    if (BOOKING_URL_RE.test(body)) return body;
+    return `${body}\n\n${ctaLine}\n${url}`;
+  }
+
+  if (!LINK_IN_BIO_RE.test(body)) {
+    body = `${body}\n\n${instagramLinkInBioLine(french)}`;
+  }
+  return body;
 }

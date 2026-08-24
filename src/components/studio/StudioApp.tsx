@@ -23,9 +23,13 @@ import {
   rollIncludeOnImageText,
   withOnImageTextLine,
 } from "@/lib/studio/image-context";
-import { randomCaptionPrompt } from "@/lib/studio/caption-prompt";
+import {
+  effectiveCaptionPrompt,
+  randomCaptionPrompt,
+} from "@/lib/studio/caption-prompt";
 import { pickShortOnImageHeadline } from "@/lib/studio/image-prompt";
 import { stripHashtagsFromCaption } from "@/lib/studio/sanitize-copy";
+import { withClinicBookingLink } from "@/lib/studio/targeting";
 import type {
   GeneratedAd,
   GeneratedAdCopy,
@@ -653,7 +657,10 @@ export function StudioApp() {
         selectedPhoto.mimeType.startsWith("video/")
           ? `Ad based on AI/social video: ${selectedPhoto.name}`
           : `Ad based on uploaded photo: ${selectedPhoto.name}`);
-      const notes = [captionPrompt.trim(), photoContext]
+      const notes = [
+        effectiveCaptionPrompt(captionPrompt, captionCategoryId),
+        photoContext,
+      ]
         .filter(Boolean)
         .join("\n\n");
 
@@ -1916,7 +1923,12 @@ export function StudioApp() {
 
     const useFr = publishLang === "fr";
     const copy = useFr && activeAd.fr ? activeAd.fr : activeAd;
-    const caption = stripHashtagsFromCaption(copy.caption);
+    const caption = withClinicBookingLink(
+      stripHashtagsFromCaption(copy.caption),
+      copy.cta,
+      useFr,
+      { forFacebook: platform === "facebook" }
+    );
     const liveFrPhoto =
       (activeAd.photoIdFr &&
         photos.find((p) => p.id === activeAd.photoIdFr)) ||

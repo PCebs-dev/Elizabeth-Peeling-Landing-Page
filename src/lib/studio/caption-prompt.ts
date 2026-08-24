@@ -52,6 +52,46 @@ const CATEGORY_HOOKS: Record<StudioCategoryId, string[]> = {
   ],
 };
 
+/** Gray placeholder in Caption prompt — not sent unless the dentist types over it. */
+export const DEFAULT_CAPTION_PROMPT_PLACEHOLDER = `How to advertise a price legally in Studio.
+Put labeled facts in the caption prompt, for example:
+
+Regular price: $X
+Special price: $Y
+Expiry date: YYYY-MM-DD
+Nature of the service: …
+Materials: …
+Lab / other services included: yes/no
+Additional services not included: …
+
+Until those labels are all present, regen will not republish $4,000 / $2,500 / Beautifi.`;
+
+function isUnfilledPriceTemplate(text: string): boolean {
+  const t = text.trim();
+  if (!t) return true;
+  const looksLikeHint =
+    /how to advertise a price legally/i.test(t) ||
+    /put labeled facts in the caption prompt/i.test(t);
+  const stillHasPlaceholders =
+    /regular\s+price:\s*\$x\b/i.test(t) &&
+    /(exceptional|special)\s+price:\s*\$y\b/i.test(t);
+  return looksLikeHint && stillHasPlaceholders;
+}
+
+/**
+ * Empty or unmodified legal-price hint → random category brief (Invisalign, implants, …).
+ * Filled facts (including real prices) are passed through for the model + ODQ gate.
+ */
+export function effectiveCaptionPrompt(
+  raw: string,
+  categoryId: StudioCategoryId
+): string {
+  if (isUnfilledPriceTemplate(raw)) {
+    return randomCaptionPrompt(categoryId);
+  }
+  return raw.trim();
+}
+
 /**
  * Auto-fills an editable caption brief (same idea as Random on the image prompt).
  * The dentist can then add promo pricing or other facts before Generate caption.

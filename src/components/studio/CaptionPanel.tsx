@@ -1,6 +1,7 @@
 "use client";
 
 import type { StudioCategory } from "@/lib/studio/categories";
+import { DEFAULT_CAPTION_PROMPT_PLACEHOLDER } from "@/lib/studio/caption-prompt";
 import type { StudioCategoryId, StudioLanguage } from "@/lib/studio/types";
 
 interface CaptionPanelProps {
@@ -101,11 +102,9 @@ export function CaptionPanel({
         <textarea
           value={captionPrompt}
           onChange={(e) => onCaptionPromptChange(e.target.value)}
-          rows={5}
+          rows={12}
           disabled={busy}
-          placeholder={
-            "Optional direction (woven in, then ODQ-checked).\nPromo example — all of these labels are required or prices are stripped:\nRegular price: $X\nExceptional price: $Y\nExpiry date: YYYY-MM-DD\nService: ...\nMaterials: ...\nLaboratory: included/not included\nAdditional services: ..."
-          }
+          placeholder={DEFAULT_CAPTION_PROMPT_PLACEHOLDER}
           className="mt-1.5 w-full rounded-lg border border-[rgb(var(--brand-200))] bg-[rgb(var(--brand-50))] px-3 py-2.5 text-base text-[rgb(var(--brand-950))] sm:text-sm"
         />
       </label>
@@ -119,10 +118,10 @@ export function CaptionPanel({
           Random prompt
         </button>
         <p className="text-[11px] leading-snug text-[rgb(var(--brand-600))]">
-          AI still writes the caption. Your prompt steers it (pricing, occasion,
-          tone). Every caption is written and checked against the Code de
-          déontologie des dentistes (ODQ), including identification as a
-          general dentist and same-size type when two prices appear.
+          AI still writes the caption. Leave this gray hint as-is for a random
+          caption in the selected theme (Invisalign, implants, …). Type over it
+          to steer the post. Every caption is written and checked against the
+          Code de déontologie des dentistes (ODQ).
         </p>
       </div>
 
