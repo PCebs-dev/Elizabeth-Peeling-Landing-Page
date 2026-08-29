@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { STUDIO_COOKIE, verifySessionToken } from "@/lib/studio/auth";
-import { retouchStudioImage } from "@/lib/studio/retouch-image";
+import {
+  retouchStudioImage,
+  type RetouchAspect,
+} from "@/lib/studio/retouch-image";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -20,12 +23,23 @@ function bytesFromBase64(value: string): Uint8Array {
   return new Uint8Array(buf);
 }
 
-async function readRetouchInput(request: Request): Promise<{
+function parseAspect(value: unknown): RetouchAspect | undefined {
+  if (value === "story" || value === "square") return value;
+  return undefined;
+}
+
+type RetouchInput = {
   bytes: Uint8Array;
   mimeType: string;
   filename: string;
   notes: string;
-} | { error: string; status: number }> {
+  maskBytes?: Uint8Array;
+  aspect?: RetouchAspect;
+};
+
+async function readRetouchInput(
+  request: Request
+): Promise<RetouchInput | { error: string; status: number }> {
   const contentType = (request.headers.get("content-type") || "").toLowerCase();
 
   if (contentType.includes("application/json")) {
@@ -63,7 +77,20 @@ async function readRetouchInput(request: Request): Promise<{
         ? body.filename.trim()
         : "photo.png";
     const notes = typeof body.notes === "string" ? body.notes.trim() : "";
-    return { bytes, mimeType, filename, notes };
+    const maskRaw =
+      typeof body.maskBase64 === "string" ? body.maskBase64 : "";
+    const maskBytes = maskRaw.trim() ? bytesFromBase64(maskRaw) : undefined;
+    if (maskBytes && maskBytes.byteLength > 12 * 1024 * 1024) {
+      return { error: "Mask must be under 12MB", status: 400 };
+    }
+    return {
+      bytes,
+      mimeType,
+      filename,
+      notes,
+      maskBytes,
+      aspect: parseAspect(body.aspect),
+    };
   }
 
   let form: FormData;
@@ -93,12 +120,26 @@ async function readRetouchInput(request: Request): Promise<{
   const notes = typeof notesRaw === "string" ? notesRaw.trim() : "";
   const filename =
     image instanceof File && image.name ? image.name : "photo.png";
+  const mask = form.get("mask");
+  let maskBytes: Uint8Array | undefined;
+  if (mask instanceof Blob && mask.size > 0) {
+    if (mask.size > 12 * 1024 * 1024) {
+      return { error: "Mask must be under 12MB", status: 400 };
+    }
+    maskBytes = new Uint8Array(await mask.arrayBuffer());
+  }
+  const aspectRaw = form.get("aspect");
+  const aspect = parseAspect(
+    typeof aspectRaw === "string" ? aspectRaw.trim() : undefined
+  );
 
   return {
     bytes: new Uint8Array(await image.arrayBuffer()),
     mimeType,
     filename,
     notes,
+    maskBytes,
+    aspect,
   };
 }
 
@@ -120,6 +161,8 @@ export async function POST(request: Request) {
       mimeType: input.mimeType,
       filename: input.filename,
       notes: input.notes,
+      maskBytes: input.maskBytes,
+      aspect: input.aspect,
     });
     return NextResponse.json({
       imageBase64: result.base64,

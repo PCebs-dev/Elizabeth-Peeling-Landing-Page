@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type MouseEvent } from "react";
+import Link from "next/link";
 import type { StudioCategory } from "@/lib/studio/categories";
 import type { StudioCategoryId, StudioPhoto } from "@/lib/studio/types";
 
@@ -17,8 +18,6 @@ interface PhotoLibraryProps {
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
   onNoteChange: (id: string, note: string) => void;
-  onDigitalEnhance?: (id: string, notes: string) => void | Promise<void>;
-  enhancingId?: string | null;
 }
 
 export function PhotoLibrary({
@@ -34,8 +33,6 @@ export function PhotoLibrary({
   onSelect,
   onDelete,
   onNoteChange,
-  onDigitalEnhance,
-  enhancingId = null,
 }: PhotoLibraryProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
@@ -44,7 +41,6 @@ export function PhotoLibrary({
   const [filter, setFilter] = useState<StudioCategoryId | "all">("all");
   const [dragging, setDragging] = useState(false);
   const [showAll, setShowAll] = useState(false);
-  const [enhanceNotes, setEnhanceNotes] = useState<Record<string, string>>({});
 
   const PREVIEW_LIMIT = 24;
 
@@ -277,38 +273,13 @@ export function PhotoLibrary({
                       placeholder="Note"
                       className="w-full rounded border border-[rgb(var(--brand-200))] px-1.5 py-1 text-[10px]"
                     />
-                    {!isVideo && onDigitalEnhance ? (
-                      <div className="space-y-1">
-                        <textarea
-                          value={enhanceNotes[photo.id] ?? ""}
-                          onChange={(e) =>
-                            setEnhanceNotes((prev) => ({
-                              ...prev,
-                              [photo.id]: e.target.value,
-                            }))
-                          }
-                          rows={2}
-                          maxLength={500}
-                          placeholder="Enhance notes: e.g. soften blemish, whiten teeth slightly"
-                          disabled={enhancingId === photo.id}
-                          className="w-full resize-none rounded border border-[rgb(var(--brand-200))] px-1.5 py-1 text-[10px] disabled:opacity-50"
-                        />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void onDigitalEnhance(
-                              photo.id,
-                              enhanceNotes[photo.id] ?? ""
-                            )
-                          }
-                          disabled={Boolean(enhancingId)}
-                          className="min-h-8 w-full rounded-md border border-[rgb(var(--brand-300))] bg-white px-2 py-1 text-[10px] font-medium text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-50))] disabled:opacity-50"
-                        >
-                          {enhancingId === photo.id
-                            ? "Enhancing…"
-                            : "Digital enhance"}
-                        </button>
-                      </div>
+                    {!isVideo ? (
+                      <Link
+                        href={`/studio/enhance?photoId=${encodeURIComponent(photo.id)}`}
+                        className="block min-h-8 w-full rounded-md border border-[rgb(var(--brand-300))] bg-white px-2 py-1 text-center text-[10px] font-medium text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-50))]"
+                      >
+                        Enhance
+                      </Link>
                     ) : null}
                     <div className="flex items-center justify-between gap-1">
                       <button

@@ -51,7 +51,12 @@ import {
   DEFAULT_STUDIO_TTS_VOICE,
   type StudioTtsVoiceId,
 } from "@/lib/studio/tts-voices";
+import {
+  blobToBase64,
+  compressImageForRetouch,
+} from "@/lib/studio/image-client";
 import { PhotoLibrary } from "@/components/studio/PhotoLibrary";
+import { StudioNav } from "@/components/studio/StudioNav";
 import { AdPreview } from "@/components/studio/AdPreview";
 import { GenerationPanel } from "@/components/studio/GenerationPanel";
 import { CaptionPanel } from "@/components/studio/CaptionPanel";
@@ -79,37 +84,6 @@ function decodeStudioHeader(value: string | null): string {
     return decodeURIComponent(value);
   } catch {
     return value;
-  }
-}
-
-async function blobToBase64(blob: Blob): Promise<string> {
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  const chunk = 0x8000;
-  let binary = "";
-  for (let i = 0; i < bytes.length; i += chunk) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(binary);
-}
-
-async function compressImageForRetouch(blob: Blob): Promise<Blob> {
-  try {
-    const bitmap = await createImageBitmap(blob);
-    const max = 1024;
-    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return blob;
-    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-    bitmap.close();
-    const compressed = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob(resolve, "image/jpeg", 0.88)
-    );
-    return compressed && compressed.size > 0 ? compressed : blob;
-  } catch {
-    return blob;
   }
 }
 
@@ -189,7 +163,6 @@ export function StudioApp() {
   const [videoMotionPrompt, setVideoMotionPrompt] = useState("");
   const [videoMotionLoading, setVideoMotionLoading] = useState(false);
   const [mergeLoading, setMergeLoading] = useState(false);
-  const [enhancingId, setEnhancingId] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState<StudioCategoryId>("invisalign");
   /** Caption theme — defaults from selected/created media; overridable for mix-and-match */
   const [captionCategoryId, setCaptionCategoryId] =
@@ -571,81 +544,6 @@ export function StudioApp() {
     setPhotos((prev) =>
       prev.map((p) => (p.id === id ? { ...p, note } : p))
     );
-  }
-
-  async function handleDigitalEnhance(id: string, notes: string) {
-    setError("");
-    setWarning("");
-    const photo = photos.find((p) => p.id === id);
-    if (!photo?.blob) {
-      setError("Photo is missing — reselect it from the library");
-      return;
-    }
-    if (
-      photo.mediaKind === "video" ||
-      photo.mimeType.startsWith("video/")
-    ) {
-      setError("Digital enhance works with photos only");
-      return;
-    }
-
-    setEnhancingId(id);
-    try {
-      const uploadBlob = await compressImageForRetouch(photo.blob);
-      if (uploadBlob.size > 2_400_000) {
-        setError(
-          "This photo is too large to enhance on the live site. Try a smaller still."
-        );
-        return;
-      }
-      const imageBase64 = await blobToBase64(uploadBlob);
-      const res = await fetch("/api/studio/retouch-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64,
-          mimeType: uploadBlob.type || "image/jpeg",
-          filename: photo.name || "photo.png",
-          notes,
-        }),
-      });
-      const data = (await res.json()) as {
-        imageBase64?: string;
-        mimeType?: string;
-        error?: string;
-      };
-      if (!res.ok || !data.imageBase64) {
-        setError(data.error || "Digital enhance failed");
-        return;
-      }
-
-      const rootId = photo.enhancedFromId || photo.id;
-      const family = photos.filter(
-        (p) => p.id === rootId || p.enhancedFromId === rootId
-      );
-      const createdAt =
-        Math.min(...family.map((p) => p.createdAt), photo.createdAt) - 1;
-
-      const saved = await addPhotoFromBase64({
-        categoryId: photo.categoryId,
-        base64: data.imageBase64,
-        mimeType: data.mimeType || "image/png",
-        name: `${photo.name.replace(/\.[^.]+$/, "")}-enhanced.png`,
-        note: notes.trim() || "Digital enhance",
-        promptSummary: notes.trim()
-          ? `Digital enhance: ${notes.trim()}`
-          : "Digital enhance",
-        enhancedFromId: rootId,
-        createdAt,
-      });
-      await refreshPhotos();
-      setSelectedId(saved.id);
-      setWarning("Enhanced copy saved next to the original in the library.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Digital enhance failed");
-    } finally {
-      setEnhancingId(null);
-    }
   }
 
   async function generateAdFromPhoto() {
@@ -2122,6 +2020,7 @@ export function StudioApp() {
               linked.
             </p>
           ) : null}
+          <StudioNav />
         </div>
         <div className="flex flex-wrap gap-2">
           <button
@@ -2151,8 +2050,6 @@ export function StudioApp() {
             onSelect={selectPhoto}
             onDelete={handleDeletePhoto}
             onNoteChange={handleNoteChange}
-            onDigitalEnhance={(id, notes) => void handleDigitalEnhance(id, notes)}
-            enhancingId={enhancingId}
           />
           </div>
 

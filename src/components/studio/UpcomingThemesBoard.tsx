@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { getCategory } from "@/lib/studio/categories";
 import type { StudioCategoryId } from "@/lib/studio/types";
+import { StudioNav } from "@/components/studio/StudioNav";
 
 interface ThemeRow {
   id: string;
@@ -89,14 +89,9 @@ export function UpcomingThemesBoard() {
             Rolling {data?.meta.minDaysAhead ?? 35}+ day plan used when the
             calendar has no hand-authored row for a day.
           </p>
+          <StudioNav />
         </div>
         <div className="flex flex-wrap gap-2">
-          <Link
-            href="/studio"
-            className="min-h-10 rounded-lg border border-[rgb(var(--brand-300))] bg-white px-3 py-2 text-sm text-[rgb(var(--brand-800))] hover:bg-[rgb(var(--brand-50))]"
-          >
-            ← Back to studio
-          </Link>
           <a
             href="/api/studio/upcoming-themes?format=csv"
             className="min-h-10 rounded-lg bg-[rgb(var(--brand-800))] px-3 py-2 text-sm font-medium text-white hover:bg-[rgb(var(--brand-900))]"

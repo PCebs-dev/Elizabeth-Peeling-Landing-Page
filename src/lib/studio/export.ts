@@ -145,14 +145,57 @@ export function buildExportMarkdown(ad: GeneratedAd): string {
   return lines.join("\n");
 }
 
-export function downloadTextFile(filename: string, content: string): void {
-  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+export function downloadBlobFile(filename: string, blob: Blob): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = filename;
+  a.rel = "noopener";
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
+}
+
+export function downloadTextFile(filename: string, content: string): void {
+  const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+  downloadBlobFile(filename, blob);
+}
+
+/** Share an image via the OS share sheet (Mail, Messages, Files). Falls back to download. */
+export async function shareOrDownloadImage(
+  filename: string,
+  blob: Blob
+): Promise<"shared" | "downloaded"> {
+  const type = blob.type.startsWith("image/") ? blob.type : "image/png";
+  const file = new File([blob], filename, { type });
+
+  try {
+    if (
+      typeof navigator !== "undefined" &&
+      typeof navigator.share === "function"
+    ) {
+      const dataWithFile = {
+        files: [file],
+        title: filename,
+        text: "Enhanced photo from Ads Studio",
+      };
+      if (
+        typeof navigator.canShare === "function" &&
+        navigator.canShare(dataWithFile)
+      ) {
+        await navigator.share(dataWithFile);
+        return "shared";
+      }
+    }
+  } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return "shared";
+    }
+  }
+
+  downloadBlobFile(filename, blob);
+  return "downloaded";
 }
 
 /** Prefer the iOS/Android share sheet; fall back to file download. */
