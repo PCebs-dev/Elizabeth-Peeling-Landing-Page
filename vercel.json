@@ -2,17 +2,5 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
-  "installCommand": "npm install --ignore-scripts=false",
-  "functions": {
-    "src/app/api/studio/generate-video/route.ts": {
-      "maxDuration": 300,
-      "includeFiles": "node_modules/ffmpeg-static/**"
-    }
-  },
-  "crons": [
-    {
-      "path": "/api/studio/calendar/run",
-      "schedule": "0 11 * * *"
-    }
-  ]
+  "installCommand": "npm install"
 }

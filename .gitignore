@@ -48,6 +48,9 @@ next-env.d.ts
 # vercel
 .vercel
 
+# Ads Studio lives in its own GitHub repo (Peeling-Ads-Studio)
+/peeling-ads-studio/
+
 # local data-scraping artifacts
 /birdeye-*.html
 /birdeye-*.json
