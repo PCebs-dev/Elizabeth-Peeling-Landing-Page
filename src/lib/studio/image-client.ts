@@ -39,6 +39,49 @@ export async function compressImageForRetouch(blob: Blob): Promise<Blob> {
   return result.blob;
 }
 
+/**
+ * Downscale a still before image-to-video upload. Keeps enough detail for DoP
+ * while staying well under the serverless request body limit, so a big phone
+ * photo can never fail the submit (and waste the round trip) on size alone.
+ */
+export async function compressImageForVideoStill(blob: Blob): Promise<Blob> {
+  const maxEdge = 1536;
+  const maxBytes = 3.5 * 1024 * 1024;
+  if (blob.size <= maxBytes) {
+    try {
+      const probe = await createImageBitmap(blob);
+      const longest = Math.max(probe.width, probe.height);
+      probe.close();
+      if (longest <= maxEdge) return blob;
+    } catch {
+      return blob;
+    }
+  }
+
+  try {
+    const bitmap = await createImageBitmap(blob);
+    const scale = Math.min(1, maxEdge / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) {
+      bitmap.close();
+      return blob;
+    }
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    bitmap.close();
+    const out = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.92)
+    );
+    return out && out.size > 0 ? out : blob;
+  } catch {
+    return blob;
+  }
+}
+
 export async function compressImageForRetouchWithSize(blob: Blob): Promise<{
   blob: Blob;
   width: number;

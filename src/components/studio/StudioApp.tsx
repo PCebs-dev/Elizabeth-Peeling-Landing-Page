@@ -100,7 +100,7 @@ async function readResponseJson<T>(res: Response): Promise<T | null> {
 function videoGatewayTimeoutMessage(status: number, contentType?: string): string {
   const kind = contentType?.split(";")[0]?.trim();
   const extra = kind ? `, ${kind}` : "";
-  return `AI video generation timed out (${status}${extra}). The host stopped waiting before Higgsfield finished rendering — this is not a credits/keys error. Wait a minute and tap Generate video again (DoP often takes 3–8 minutes), or check the job in Higgsfield Cloud.`;
+  return `AI video generation timed out (${status}${extra}). The host stopped waiting before Higgsfield finished rendering — this is not a credits/keys error, and the render usually still completes. Find the job in Higgsfield Cloud and recover it from the Video Creation tab instead of paying for a second render; the Video Creation tab has no 5-minute limit.`;
 }
 
 function studioFetchErrorMessage(err: unknown, fallbackStatus?: number): string {
@@ -1426,10 +1426,17 @@ export function StudioApp() {
       }
 
       setError(
-        data.error ||
-          (res.status === 504 || res.status === 524 || res.status === 502
-            ? videoGatewayTimeoutMessage(res.status)
-            : `AI video generation failed (${res.status}). The clip was not saved — check Higgsfield credits/keys and try again.`)
+        [
+          data.error ||
+            (res.status === 504 || res.status === 524 || res.status === 502
+              ? videoGatewayTimeoutMessage(res.status)
+              : `AI video generation failed (${res.status}). The clip was not saved — check Higgsfield credits/keys and try again.`),
+          data.requestId
+            ? `Those credits are not lost: open the Video Creation tab, expand “Recover a video by request ID”, and paste ${data.requestId} to download the finished clip.`
+            : "",
+        ]
+          .filter(Boolean)
+          .join(" ")
       );
       if (data.motionPrompt) {
         const copied = await copyToClipboard(data.motionPrompt);
@@ -1441,7 +1448,7 @@ export function StudioApp() {
               ? "Fallback motion prompt copied to clipboard — paste it in Higgsfield if you want to generate manually."
               : "Fallback motion prompt is available — clipboard copy was blocked; use Open Higgsfield below to generate manually.",
             timedOut && data.requestId
-              ? `You can also look up request ${data.requestId} in Higgsfield Cloud.`
+              ? `Request ${data.requestId} is also viewable in Higgsfield Cloud.`
               : "",
           ]
             .filter(Boolean)

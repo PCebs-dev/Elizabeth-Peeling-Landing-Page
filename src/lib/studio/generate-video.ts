@@ -291,6 +291,217 @@ async function pollUntilDone(
   );
 }
 
+export function statusUrlForRequestId(requestId: string): string {
+  return `${HF_BASE}/requests/${requestId.trim()}/status`;
+}
+
+/**
+ * Upload still + queue DoP. Returns immediately (no long poll) so Vercel Hobby
+ * does not kill the request while Higgsfield renders.
+ */
+export async function startStudioVideoJob(params: {
+  imageBytes: Uint8Array;
+  imageMimeType: string;
+  categoryId: StudioCategoryId;
+  notes?: string;
+  /** When set, used as the DoP prompt instead of the built motion template. */
+  promptOverride?: string;
+  tone?: StudioVideoTone;
+  duration?: StudioVideoDuration;
+}): Promise<{
+  requestId: string;
+  statusUrl: string;
+  promptSummary: string;
+  captionTheme: string;
+  motionPrompt: string;
+  model: string;
+  provider: "higgsfield";
+  duration: number;
+}> {
+  if (!isHiggsfieldConfigured()) {
+    throw new Error(
+      "Higgsfield is not configured. Set HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET."
+    );
+  }
+
+  const duration = params.duration ?? 5;
+  const apiDuration = mapStudioVideoDurationToApi(duration);
+
+  const built = buildVideoMotionPrompt({
+    categoryId: params.categoryId,
+    notes: params.notes,
+    tone: params.tone,
+    duration,
+  });
+  const prompt = (params.promptOverride?.trim() || built.prompt).slice(0, 1200);
+
+  const mime = params.imageMimeType || "image/png";
+  const imageUrl = await uploadBytes(params.imageBytes, mime);
+  const model = videoModel();
+
+  const submit = await fetch(`${HF_BASE}/${model}`, {
+    method: "POST",
+    headers: hfHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      image_url: imageUrl,
+      prompt,
+      enhance_prompt: true,
+      duration: apiDuration,
+    }),
+  });
+
+  if (!submit.ok) {
+    const text = await submit.text();
+    throw new Error(formatHiggsfieldSubmitError(submit.status, text));
+  }
+
+  const queued = (await submit.json()) as HfStatus;
+  const requestId = queued.request_id?.trim() || "";
+  const statusUrl =
+    queued.status_url ||
+    (requestId ? statusUrlForRequestId(requestId) : "");
+  if (!statusUrl || !requestId) {
+    throw new Error("Higgsfield did not return a request id / status URL");
+  }
+
+  return {
+    requestId,
+    statusUrl,
+    promptSummary: built.summary,
+    captionTheme: built.captionTheme,
+    motionPrompt: prompt,
+    model,
+    provider: "higgsfield",
+    duration: apiDuration,
+  };
+}
+
+export type StudioVideoJobStatus = {
+  status: string;
+  requestId?: string;
+  error?: string;
+  videoUrl?: string;
+};
+
+/** Single status check — for client-driven polling. */
+export async function getStudioVideoJobStatus(
+  requestId: string
+): Promise<StudioVideoJobStatus> {
+  if (!isHiggsfieldConfigured()) {
+    throw new Error(
+      "Higgsfield is not configured. Set HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET."
+    );
+  }
+  const id = requestId.trim();
+  if (!id) throw new Error("Missing requestId");
+
+  const statusUrl = statusUrlForRequestId(id);
+  const res = await fetch(statusUrl, { headers: hfHeaders() });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Higgsfield status failed (${res.status}): ${text.slice(0, 300)}`);
+  }
+  const data = (await res.json()) as HfStatus;
+  const status = data.status || "unknown";
+  const videoUrl = extractVideoUrl(data);
+
+  if (status === "nsfw") {
+    return {
+      status,
+      requestId: data.request_id || id,
+      error:
+        "Higgsfield blocked this still as unsafe. Use a different photo-only still (no overlay text) and try again.",
+    };
+  }
+  if (status === "failed" || status === "canceled") {
+    const reason = (data.error || data.detail || "").trim();
+    return {
+      status,
+      requestId: data.request_id || id,
+      error:
+        !reason || /^generation failed$/i.test(reason)
+          ? "Higgsfield could not finish this clip. Try a clearer face/shoulders still, or retry."
+          : reason,
+    };
+  }
+
+  return {
+    status,
+    requestId: data.request_id || id,
+    videoUrl,
+  };
+}
+
+/**
+ * Open the finished MP4 as a stream. Streaming (not buffering) keeps clips over
+ * the ~6MB serverless response payload limit working; a 5s DoP clip is often 6MB+.
+ */
+export async function openStudioVideoStream(requestId: string): Promise<{
+  body: ReadableStream<Uint8Array>;
+  mimeType: string;
+  contentLength?: string;
+  requestId: string;
+  videoUrl: string;
+}> {
+  const job = await getStudioVideoJobStatus(requestId);
+  if (job.status !== "completed") {
+    throw new Error(
+      job.error ||
+        `Video is not ready yet (status: ${job.status}). Keep polling, then fetch again.`
+    );
+  }
+  if (!job.videoUrl) {
+    throw new Error("Higgsfield completed but returned no video URL");
+  }
+
+  const videoRes = await fetch(job.videoUrl);
+  if (!videoRes.ok || !videoRes.body) {
+    throw new Error(`Failed to download Higgsfield video (${videoRes.status})`);
+  }
+
+  return {
+    body: videoRes.body,
+    mimeType:
+      videoRes.headers.get("content-type")?.split(";")[0]?.trim() ||
+      "video/mp4",
+    contentLength: videoRes.headers.get("content-length") ?? undefined,
+    requestId: job.requestId || requestId.trim(),
+    videoUrl: job.videoUrl,
+  };
+}
+
+/** When job is completed, download the MP4 bytes (server-side use). */
+export async function fetchStudioVideoResult(requestId: string): Promise<{
+  bytes: Buffer;
+  mimeType: string;
+  requestId: string;
+}> {
+  const job = await getStudioVideoJobStatus(requestId);
+  if (job.status !== "completed") {
+    throw new Error(
+      job.error ||
+        `Video is not ready yet (status: ${job.status}). Keep polling, then fetch again.`
+    );
+  }
+  if (!job.videoUrl) {
+    throw new Error("Higgsfield completed but returned no video URL");
+  }
+
+  const videoRes = await fetch(job.videoUrl);
+  if (!videoRes.ok) {
+    throw new Error(`Failed to download Higgsfield video (${videoRes.status})`);
+  }
+  const buf = Buffer.from(await videoRes.arrayBuffer());
+  const outMime =
+    videoRes.headers.get("content-type")?.split(";")[0]?.trim() || "video/mp4";
+
+  return {
+    bytes: buf,
+    mimeType: outMime,
+    requestId: job.requestId || requestId.trim(),
+  };
+}
+
 export async function generateStudioVideoFromImage(params: {
   imageBytes: Uint8Array;
   imageMimeType: string;
@@ -308,55 +519,9 @@ export async function generateStudioVideoFromImage(params: {
   provider: "higgsfield";
   duration: number;
 }> {
-  if (!isHiggsfieldConfigured()) {
-    throw new Error(
-      "Higgsfield is not configured. Set HIGGSFIELD_API_KEY_ID and HIGGSFIELD_API_KEY_SECRET."
-    );
-  }
-
-  const duration = params.duration ?? 5;
-  const apiDuration = mapStudioVideoDurationToApi(duration);
-
-  const { prompt, summary, captionTheme } = buildVideoMotionPrompt({
-    categoryId: params.categoryId,
-    notes: params.notes,
-    tone: params.tone,
-    duration,
-  });
-
-  const mime = params.imageMimeType || "image/png";
-  const imageUrl = await uploadBytes(params.imageBytes, mime);
-  const model = videoModel();
-
-  // DoP standard documents `duration` as 5 or 10 seconds.
-  const submit = await fetch(`${HF_BASE}/${model}`, {
-    method: "POST",
-    headers: hfHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({
-      image_url: imageUrl,
-      prompt: prompt.slice(0, 1200),
-      enhance_prompt: true,
-      duration: apiDuration,
-    }),
-  });
-
-  if (!submit.ok) {
-    const text = await submit.text();
-    throw new Error(formatHiggsfieldSubmitError(submit.status, text));
-  }
-
-  const queued = (await submit.json()) as HfStatus;
-  const statusUrl =
-    queued.status_url ||
-    (queued.request_id
-      ? `${HF_BASE}/requests/${queued.request_id}/status`
-      : "");
-  if (!statusUrl) {
-    throw new Error("Higgsfield did not return a status URL");
-  }
-
-  const done = await pollUntilDone(statusUrl, {
-    requestId: queued.request_id,
+  const started = await startStudioVideoJob(params);
+  const done = await pollUntilDone(started.statusUrl, {
+    requestId: started.requestId,
   });
   const videoUrl = extractVideoUrl(done);
   if (!videoUrl) {
@@ -371,16 +536,15 @@ export async function generateStudioVideoFromImage(params: {
   const outMime =
     videoRes.headers.get("content-type")?.split(";")[0]?.trim() || "video/mp4";
 
-  // Return raw bytes — base64-in-JSON balloons size ~33% and often breaks the client.
   return {
     bytes: buf,
     mimeType: outMime,
-    promptSummary: summary,
-    captionTheme,
-    motionPrompt: prompt,
-    model,
+    promptSummary: started.promptSummary,
+    captionTheme: started.captionTheme,
+    motionPrompt: started.motionPrompt,
+    model: started.model,
     provider: "higgsfield",
-    duration: apiDuration,
+    duration: started.duration,
   };
 }
 

@@ -19,6 +19,11 @@ const ITEMS = [
     label: "Themes",
     match: (path: string) => path.startsWith("/studio/themes"),
   },
+  {
+    href: "/studio/video",
+    label: "Video Creation",
+    match: (path: string) => path.startsWith("/studio/video"),
+  },
 ] as const;
 
 export function StudioNav() {
