@@ -48,8 +48,13 @@ next-env.d.ts
 # vercel
 .vercel
 
-# Ads Studio lives in its own GitHub repo (Peeling-Ads-Studio)
-/peeling-ads-studio/
+# Nested Ads Studio + public landing (Vercel Root Directory: peeling-ads-studio)
+/peeling-ads-studio/node_modules/
+/peeling-ads-studio/.next/
+/peeling-ads-studio/.env
+/peeling-ads-studio/.env.local
+/peeling-ads-studio/*.tsbuildinfo
+/peeling-ads-studio/next-env.d.ts
 
 # local data-scraping artifacts
 /birdeye-*.html
@@ -63,3 +68,5 @@ next-env.d.ts
 /tools/invisalign-market-intel/.env
 /tools/invisalign-market-intel/.env.local
 .env*
+!.env.example
+!peeling-ads-studio/.env.example

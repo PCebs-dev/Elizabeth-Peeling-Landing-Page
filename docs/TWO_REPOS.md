@@ -1,25 +1,33 @@
-# Two-repo setup: Landing page + Ads Studio
+# Two-app setup: Landing page + Ads Studio
 
-| App | Folder / GitHub | Vercel project | Primary URL |
-|-----|-----------------|----------------|-------------|
-| **Ads Studio** | [`peeling-ads-studio/`](../peeling-ads-studio/) → [Peeling-Ads-Studio](https://github.com/PCebs-dev/Peeling-Ads-Studio) | `elizabeth-peeling-landing-page` | **https://elizabeth-peeling-landing-page.vercel.app/studio** |
-| **Landing page** | Repo root → [Elizabeth-Peeling-Landing-Page](https://github.com/PCebs-dev/Elizabeth-Peeling-Landing-Page) | Deploy separately (marketing only) | `elizabethpeeling.ca` (when DNS is set) |
+The public Vercel project (`elizabeth-peeling-landing-page`) builds **`peeling-ads-studio/`** as its Root Directory. That app now serves both:
 
-Studio edits happen only in **Peeling-Ads-Studio**. This landing repo no longer contains `/studio` code — requests to `/studio` redirect to the studio URL above.
+| Path | What visitors see |
+|------|-------------------|
+| `/`, `/en`, `/fr` | Dr. Elizabeth Peeling marketing landing page |
+| `/studio` | Private Ads Studio (password gated) |
+
+| App | Source | Vercel project | Public URL |
+|-----|--------|----------------|------------|
+| **Landing + Studio** | [`peeling-ads-studio/`](../peeling-ads-studio/) in this repo | `elizabeth-peeling-landing-page` | **https://elizabeth-peeling-landing-page.vercel.app/en** |
+| **Landing (repo root)** | Repo root | Optional separate project | `elizabethpeeling.ca` when DNS is set |
+
+Keep landing copy in **both** `src/` (repo root) and `peeling-ads-studio/src/` in sync when you change marketing pages. The nested copy is what production currently deploys.
 
 ## Local development
 
-**Studio** (separate folder / repo):
+**Production-shaped app** (landing + studio, same as Vercel):
 
 ```bash
 cd peeling-ads-studio
 npm install
 cp .env.example .env.local
 npm run dev
-# http://localhost:3000/studio/video
+# Landing: http://localhost:3000/en
+# Studio:  http://localhost:3000/studio
 ```
 
-**Landing page** (this repo root):
+**Landing-only** (repo root):
 
 ```bash
 npm install

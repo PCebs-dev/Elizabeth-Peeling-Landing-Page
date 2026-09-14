@@ -110,7 +110,12 @@ npm run build
 npm start
 ```
 
-Deploy to [Vercel](https://vercel.com) or Netlify. Connect your custom domain (e.g. `elizabethpeeling.ca`).
+The public site is the Next app in [`peeling-ads-studio/`](peeling-ads-studio/) (Vercel Root Directory). After deploy:
+
+- Landing: https://elizabeth-peeling-landing-page.vercel.app/en
+- Studio: https://elizabeth-peeling-landing-page.vercel.app/studio
+
+You can also deploy the repo root as a marketing-only project and connect `elizabethpeeling.ca` when DNS is ready.
 
 ## Ads Studio (separate app)
 
