@@ -3,7 +3,7 @@ import { LandingPage } from "@/components/LandingPage";
 import { getContent } from "@/content";
 
 export const metadata: Metadata = {
-  title: getContent("fr").meta.title,
+  title: { absolute: getContent("fr").meta.title },
   description: getContent("fr").meta.description,
   keywords: getContent("fr").meta.keywords,
   alternates: {
