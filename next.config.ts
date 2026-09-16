@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const STUDIO_ORIGIN =
   process.env.NEXT_PUBLIC_STUDIO_URL ??
-  "https://elizabeth-peeling-landing-page.vercel.app";
+  "https://peeling-ads-studio.vercel.app";
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
