@@ -1,33 +1,17 @@
 # Two-app setup: Landing page + Ads Studio
 
-The public Vercel project (`elizabeth-peeling-landing-page`) builds **`peeling-ads-studio/`** as its Root Directory. That app now serves both:
+These are **two codebases**, **two GitHub repos**, and **two Vercel projects**.
 
-| Path | What visitors see |
-|------|-------------------|
-| `/`, `/en`, `/fr` | Dr. Elizabeth Peeling marketing landing page |
-| `/studio` | Private Ads Studio (password gated) |
+| App | GitHub repo | Vercel project | Public URL |
+|-----|-------------|----------------|------------|
+| **Landing page** | [Elizabeth-Peeling-Landing-Page](https://github.com/PCebs-dev/Elizabeth-Peeling-Landing-Page) | `elizabeth-peeling-landing-page` | **https://elizabeth-peeling-landing-page.vercel.app** (`/en`, `/fr`) |
+| **Ads Studio** | [Peeling-Ads-Studio](https://github.com/PCebs-dev/Peeling-Ads-Studio) | `peeling-ads-studio` | **https://studio.elizabethpeeling.ca** |
 
-| App | Source | Vercel project | Public URL |
-|-----|--------|----------------|------------|
-| **Landing + Studio** | [`peeling-ads-studio/`](../peeling-ads-studio/) in this repo | `elizabeth-peeling-landing-page` | **https://elizabeth-peeling-landing-page.vercel.app/en** |
-| **Landing (repo root)** | Repo root | Optional separate project | `elizabethpeeling.ca` when DNS is set |
-
-Keep landing copy in **both** `src/` (repo root) and `peeling-ads-studio/src/` in sync when you change marketing pages. The nested copy is what production currently deploys.
+The nested `peeling-ads-studio/` folder in this landing-page repo is **not** what production deploys. Production landing page builds **this repo root**.
 
 ## Local development
 
-**Production-shaped app** (landing + studio, same as Vercel):
-
-```bash
-cd peeling-ads-studio
-npm install
-cp .env.example .env.local
-npm run dev
-# Landing: http://localhost:3000/en
-# Studio:  http://localhost:3000/studio
-```
-
-**Landing-only** (repo root):
+**Landing page** (this repo):
 
 ```bash
 npm install
@@ -35,4 +19,13 @@ npm run dev
 # http://localhost:3000/en
 ```
 
-Use different ports if both run at once (`npm run dev -- -p 3001`).
+**Ads Studio** (separate clone of Peeling-Ads-Studio):
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+# http://localhost:3010/studio
+```
+
+Use different ports if both run at once.
