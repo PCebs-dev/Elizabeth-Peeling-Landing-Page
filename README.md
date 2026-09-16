@@ -54,7 +54,7 @@ Copy `.env.example` to `.env.local` and set `NEXT_PUBLIC_GA_ID` for analytics.
 
 The Ads Studio is a **separate app** (separate GitHub repo and Vercel project). It is not served from this landing page.
 
-- Studio: **https://studio.elizabethpeeling.ca**
+- Studio: **https://peeling-ads-studio.vercel.app**
 - Landing page: **https://elizabeth-peeling-landing-page.vercel.app**
 
 See [`docs/TWO_REPOS.md`](docs/TWO_REPOS.md). Studio setup, passwords, and API keys live in the **Peeling-Ads-Studio** repo.
@@ -69,7 +69,7 @@ npx vercel --prod
 ```
 
 - Landing: https://elizabeth-peeling-landing-page.vercel.app/en
-- Studio (separate project): https://studio.elizabethpeeling.ca
+- Studio (separate project): https://peeling-ads-studio.vercel.app
 
 Do **not** set Vercel Root Directory to `peeling-ads-studio/`. That nested folder is leftover and is not production.
 
